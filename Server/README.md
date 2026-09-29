@@ -17,16 +17,23 @@ API en Node.js + Express para la tienda de cartas Pokemon.
 
 ## Endpoints disponibles
 
-| Método | Ruta | Descripción |
-|---|---|---|
-| GET | `/productos` | Lista productos. Filtros opcionales: `?categoria_id=`, `?rareza=`, `?precio_max=` |
-| GET | `/productos/:id` | Detalle de un producto |
-| POST | `/usuarios/registro` | Crea un usuario. Body: `nombre, apellido, email, password` |
-| POST | `/usuarios/login` | Login. Body: `email, password`. Devuelve un token JWT |
+| Método | Ruta | Auth | Descripción |
+|---|---|---|---|
+| GET | `/productos` | No | Lista productos. Filtros opcionales: `?categoria_id=`, `?rareza=`, `?precio_max=` |
+| GET | `/productos/:id` | No | Detalle de un producto |
+| POST | `/usuarios/registro` | No | Crea un usuario. Body: `nombre, apellido, email, password` |
+| POST | `/usuarios/login` | No | Login. Body: `email, password`. Devuelve un token JWT |
+| GET | `/carrito` | Sí | Items del carrito del usuario logueado |
+| POST | `/carrito` | Sí | Agrega un producto. Body: `producto_id, cantidad` |
+| PUT | `/carrito/:id` | Sí | Actualiza la cantidad de un item. Body: `cantidad` |
+| DELETE | `/carrito/:id` | Sí | Saca un producto del carrito |
+| POST | `/pedidos` | Sí | Genera un pedido a partir del carrito, descuenta stock y vacía el carrito |
+| GET | `/pedidos` | Sí | Historial de pedidos del usuario logueado |
+| GET | `/pedidos/:id` | Sí | Detalle de un pedido, con sus items |
+
+Las rutas marcadas con **Auth: Sí** necesitan el token que devuelve `/usuarios/login`,
+mandado en el header: `Authorization: Bearer <token>`.
 
 ## Próximos endpoints
 
-- `POST /carrito` y `GET /carrito` (carrito_item)
-- `POST /pedidos` (crear pedido + detalle_pedido, descontar stock)
-- `GET /pedidos` (historial del usuario logueado)
-- Rutas de administrador (crear/editar productos, ver todos los pedidos)
+- Rutas de administrador (crear/editar productos, ver todos los pedidos, cambiar estado de un pedido)

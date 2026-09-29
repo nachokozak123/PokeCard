@@ -4,6 +4,9 @@ const cors = require('cors');
 
 const productosRouter = require('./src/routes/productos');
 const usuariosRouter = require('./src/routes/usuarios');
+const carritoRouter = require('./src/routes/carrito');
+const pedidosRouter = require('./src/routes/pedidos');
+const verificarToken = require('./src/middleware/auth');
 
 const app = express();
 
@@ -12,6 +15,8 @@ app.use(express.json());
 
 app.use('/productos', productosRouter);
 app.use('/usuarios', usuariosRouter);
+app.use('/carrito', verificarToken, carritoRouter);
+app.use('/pedidos', verificarToken, pedidosRouter);
 
 app.get('/', (req, res) => {
   res.json({ mensaje: 'API de PokeCard funcionando' });
