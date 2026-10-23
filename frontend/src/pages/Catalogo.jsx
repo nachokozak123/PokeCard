@@ -36,18 +36,26 @@ export default function Catalogo() {
     }));
   }
 
-  const Grupo = ({ titulo, campo, items }) => (
-    <div className="filtro-grupo">
-      <h4>{titulo}</h4>
-      {items.map(([valor, texto]) => (
-        <label key={valor} className="check">
-          <input type="checkbox" checked={filtros[campo].includes(String(valor))} onChange={() => alternar(campo, valor)} />
-          {texto}
-        </label>
-      ))}
+const Grupo = ({ titulo, campo, items }) => (
+  <div className="filtro-grupo">
+    <h4>{titulo}</h4>
+    <div className="filtro-chips">
+      {items.map(([valor, texto]) => {
+        const activo = filtros[campo].includes(String(valor));
+        return (
+          <button
+            key={valor}
+            type="button"
+            className={`chip ${activo ? 'chip-activo' : ''}`}
+            onClick={() => alternar(campo, valor)}
+          >
+            {texto}
+          </button>
+        );
+      })}
     </div>
-  );
-
+  </div>
+);
   return (
     <main className="contenedor catalogo">
       <aside className="filtros">

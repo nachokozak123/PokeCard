@@ -12,6 +12,7 @@ app.use('/productos', require('./routes/productos'));
 app.use('/categorias', categorias);
 app.use('/proveedores', proveedores);
 app.use('/admin', require('./routes/admin'));
+app.use('/pedidos', require('./routes/pedidos'));
 
 app.get('/', (req, res) => res.json({ api: 'PokeCard', estado: 'ok' }));
 

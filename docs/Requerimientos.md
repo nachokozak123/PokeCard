@@ -17,8 +17,8 @@
 | RF-11 | El admin puede **eliminar** productos. Si el producto tiene pedidos asociados, el sistema lo impide e informa el motivo. | Admin | Hecho |
 | RF-12 | El admin puede gestionar categorías y proveedores (alta, edición, baja y listado, vía API). | Admin | Hecho (API) |
 | RF-13 | El panel administrativo (dashboard) muestra: total de productos, clientes, pedidos y ventas; valor del inventario; productos con stock bajo; productos por categoría y últimos usuarios registrados. | Admin | Hecho |
-| RF-14 | El cliente puede agregar productos al carrito y finalizar una compra. | Cliente | Próxima etapa |
-| RF-15 | El cliente puede consultar sus pedidos; el admin puede gestionar el estado de los pedidos. | Cliente / Admin | Próxima etapa |
+| RF-14 | El cliente puede agregar productos al carrito y finalizar una compra. | Cliente | Hecho (pago simulado) |
+| RF-15 | El cliente puede consultar sus pedidos; el admin puede gestionar el estado de los pedidos. | Cliente / Admin | Parcial: el cliente consulta sus pedidos; falta la gestión de estados del admin |
 
 ## Requerimientos no funcionales
 

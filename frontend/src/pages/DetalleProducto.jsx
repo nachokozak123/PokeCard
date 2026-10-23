@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api, precio } from '../api';
+import { useCarrito } from '../CarritoContext';
 
 export default function DetalleProducto() {
   const { id } = useParams();
   const [p, setP] = useState(null);
   const [error, setError] = useState('');
+  const [agregado, setAgregado] = useState(false);
+  const { agregar } = useCarrito();
 
   useEffect(() => { api(`/productos/${id}`).then(setP).catch((e) => setError(e.message)); }, [id]);
 
@@ -32,8 +35,11 @@ export default function DetalleProducto() {
             {p.rareza && <><dt>Rareza</dt><dd>{p.rareza}</dd></>}
             <dt>Stock</dt><dd>{p.stock > 0 ? `${p.stock} unidades` : 'Sin stock'}</dd>
           </dl>
-          {/* El carrito es parte de la próxima etapa */}
-          <button className="btn btn-rojo btn-grande btn-block" disabled>Agregar al carrito (próximamente)</button>
+          <button className="btn btn-rojo btn-grande btn-block" disabled={p.stock < 1}
+            onClick={() => { agregar(p); setAgregado(true); }}>
+            {p.stock < 1 ? 'Sin stock' : 'Agregar al carrito'}
+          </button>
+          {agregado && <p className="exito">Agregado. <Link to="/carrito">Ver carrito</Link></p>}
           <p className="aviso">Autenticidad verificada · Cartas únicas, compras seguras</p>
         </div>
       </div>

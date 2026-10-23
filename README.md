@@ -79,6 +79,13 @@ Los tests usan una base de datos simulada (mock), por lo que **no necesitan MySQ
 | POST / PUT / DELETE | `/categorias` | Admin |
 | GET / POST / PUT / DELETE | `/proveedores` | Admin |
 | GET | `/admin/dashboard` | Admin |
+| POST | `/pedidos` (compra con **pago simulado**) | Usuario con sesión |
+| GET | `/pedidos/mios` | Usuario con sesión |
 
-## Qué queda para la próxima etapa
-Carrito, pedidos ("Mis pedidos") y conexión del checkout. Las tablas `pedido` y `detalle_pedido` ya existen en la base y el dashboard ya las consulta.
+## Módulo de pago (simulación)
+- **Carrito:** `frontend/src/CarritoContext.jsx` y `pages/Carrito.jsx` (se guarda en `localStorage`).
+- **Checkout:** `pages/Checkout.jsx` usa la tarjeta animada de [`crd-ui`](https://crd-ui.juanda.co/) y valida número (Luhn), titular, vencimiento y CVC.
+- **Pago simulado:** `backend/src/routes/pedidos.js`. Revalida todo, toma precios y stock de la base (nunca del cliente), crea el pedido en una transacción y descuenta el stock. **El número de tarjeta no se guarda.**
+- **Tarjetas de prueba:** `4111 1111 1111 1111` (aprobada) · cualquier tarjeta válida terminada en `0002` (rechazada). Vencimiento futuro y CVC de 3 dígitos.
+- **Mis pedidos:** `pages/MisPedidos.jsx`.
+- Tests: `backend/tests/pedidos.test.js` (6 tests nuevos, 23 en total).
