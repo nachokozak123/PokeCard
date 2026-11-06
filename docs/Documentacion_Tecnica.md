@@ -2,7 +2,6 @@
 
 > *"Cartas únicas, compras seguras."*
 > Tienda online de cartas coleccionables Pokémon.
-> La parte marcada con **[A COMPLETAR]** (el archivo de Sweet Home 3D) se tiene que hacer en ese programa.
 
 ## Índice
 
@@ -722,16 +721,23 @@ Plano de referencia del local (10 × 8 m) para armar el modelo en **Sweet Home 3
 | Mostrador / caja | Abajo a la derecha, en L | Mostrador, caja registradora, computadora |
 | Depósito | Arriba a la derecha, 3 × 3 m, con puerta | Estanterías metálicas, cajas |
 
-**Pasos en Sweet Home 3D:**
-1. *Plan → Crear paredes*: rectángulo de 1000 × 800 cm, con 250 cm de alto.
-2. Agregar las paredes del depósito (300 × 300 cm) y la puerta.
-3. *Plan → Crear habitaciones*: piso de madera en el salón y cerámico en el depósito.
-4. Colocar el mobiliario según la tabla.
-5. Pintar las paredes en morado oscuro `#1A0F2E` con un friso en rojo `#E22B3F`; el depósito en lavanda `#9B8FC0`.
-6. Importar como textura el isologotipo (cartel) y los QR (*Muebles → Importar textura*).
-7. Guardar como `docs/marketing/local_pokecard.sh3d` y exportar vistas 2D y 3D en `docs/marketing/local_2d.png` y `local_3d.png`.
+**Modelo en Sweet Home 3D:** [`marketing/local_pokecard.sh3d`](marketing/local_pokecard.sh3d) se abre con Sweet Home 3D 7.6 o superior (*Archivo → Abrir*).
 
-**[A COMPLETAR]:** el archivo `.sh3d` y sus capturas se tienen que hacer en el programa (no está instalado en la compu donde se armó esta documentación).
+| Vista 2D (plano del programa) | Vista 3D aérea |
+|---|---|
+| ![Plano 2D en Sweet Home 3D](marketing/local_2d.png) | ![Vista 3D del local](marketing/local_3d.png) |
+
+Contenido del modelo:
+- **Paredes:** 6 (las exteriores en morado oscuro `#1A0F2E` y las del depósito en lavanda `#9B8FC0`).
+- **Ambientes:** 2, el salón (71 m²) y el depósito (9 m²).
+- **Muebles:** 30 del catálogo del programa, más 6 luces de techo:
+  - aberturas: puerta de entrada, 2 vidrieras y puerta del depósito;
+  - exhibidores, vitrina con llave, mesa de juego con 6 sillas;
+  - mostrador rojo `#E22B3F` con la computadora de la caja;
+  - estantería y cajas del depósito, y plantas.
+- **Carteles:** 8, entre ellos los **QR 1 a 6** en el mismo lugar que el plano y el punto 10.13.
+
+El modelo se generó con la librería de Sweet Home 3D a partir de [`marketing/sweethome3d/GenerarLocal.java`](marketing/sweethome3d/GenerarLocal.java), así que se puede regenerar o editar a mano en el programa. Para cambiar algo (un mueble, un color) alcanza con abrir el `.sh3d`, modificarlo y guardarlo.
 
 ### 10.16 Integración del sector
 La identidad institucional no es una parte aparte: está aplicada en el sistema.
@@ -741,5 +747,5 @@ La identidad institucional no es una parte aparte: está aplicada en el sistema.
 - Los **productos** de [10.7](#107-productos) son los del catálogo (`seed.js`) y los mismos del tríptico.
 - Los **QR** de [10.13](#1013-códigos-qr-de-los-sectores) llevan a las rutas reales del sitio (`/catalogo?categoria=`, `/pedidos`), y el plano del local indica dónde va cada uno.
 - El **comprobante** `PAY-xxxxxx` que genera la API es el mismo de la lámina de aplicaciones del logo.
-- El **tríptico**, el **merchandising** y el **local en Sweet Home 3D** usan la misma paleta, para que la experiencia sea igual en el local y en la web.
+- El **tríptico**, el **merchandising** y el **local en Sweet Home 3D** (`local_pokecard.sh3d`) usan la misma paleta, para que la experiencia sea igual en el local y en la web.
 - La prueba **F2** ([7.4](#74-pruebas-del-frontend)) verifica que el sitio respete esta identidad.
