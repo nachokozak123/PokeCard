@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" font-family="Sora, Arial, sans-serif">
+<rect width="900" height="480" fill="#0a0a0a"/>
+<text x="30" y="40" font-size="22" font-weight="700" fill="#F5F2FA">Círculo cromático y paleta institucional</text>
+<path d="M191.2 120.1 A150 150 0 0 1 268.8 120.1 L252.0 182.9 A85 85 0 0 0 208.0 182.9 Z" fill="#e53939" stroke="#0a0a0a" stroke-width="2"/>
+<path d="M268.8 120.1 A150 150 0 0 1 336.1 158.9 L290.1 204.9 A85 85 0 0 0 252.0 182.9 Z" fill="#e58f39" stroke="#0a0a0a" stroke-width="2"/>
+<path d="M336.1 158.9 A150 150 0 0 1 374.9 226.2 L312.1 243.0 A85 85 0 0 0 290.1 204.9 Z" fill="#e5e539" stroke="#0a0a0a" stroke-width="2"/>
+<path d="M374.9 226.2 A150 150 0 0 1 374.9 303.8 L312.1 287.0 A85 85 0 0 0 312.1 243.0 Z" fill="#8fe539" stroke="#0a0a0a" stroke-width="2"/>
+<path d="M374.9 303.8 A150 150 0 0 1 336.1 371.1 L290.1 325.1 A85 85 0 0 0 312.1 287.0 Z" fill="#39e539" stroke="#0a0a0a" stroke-width="2"/>
+<path d="M336.1 371.1 A150 150 0 0 1 268.8 409.9 L252.0 347.1 A85 85 0 0 0 290.1 325.1 Z" fill="#39e58f" stroke="#0a0a0a" stroke-width="2"/>
+<path d="M268.8 409.9 A150 150 0 0 1 191.2 409.9 L208.0 347.1 A85 85 0 0 0 252.0 347.1 Z" fill="#39e5e5" stroke="#0a0a0a" stroke-width="2"/>
+<path d="M191.2 409.9 A150 150 0 0 1 123.9 371.1 L169.9 325.1 A85 85 0 0 0 208.0 347.1 Z" fill="#398fe5" stroke="#0a0a0a" stroke-width="2"/>
+<path d="M123.9 371.1 A150 150 0 0 1 85.1 303.8 L147.9 287.0 A85 85 0 0 0 169.9 325.1 Z" fill="#3939e5" stroke="#0a0a0a" stroke-width="2"/>
+<path d="M85.1 303.8 A150 150 0 0 1 85.1 226.2 L147.9 243.0 A85 85 0 0 0 147.9 287.0 Z" fill="#8f39e5" stroke="#0a0a0a" stroke-width="2"/>
+<path d="M85.1 226.2 A150 150 0 0 1 123.9 158.9 L169.9 204.9 A85 85 0 0 0 147.9 243.0 Z" fill="#e539e5" stroke="#0a0a0a" stroke-width="2"/>
+<path d="M123.9 158.9 A150 150 0 0 1 191.2 120.1 L208.0 182.9 A85 85 0 0 0 169.9 204.9 Z" fill="#e5398f" stroke="#0a0a0a" stroke-width="2"/>
+<line x1="230" y1="265" x2="69.5" y2="287.1" stroke="#F5F2FA" stroke-width="2" stroke-dasharray="5 4"/>
+<circle cx="69.5" cy="287.1" r="13" fill="#7B5CB0" stroke="#F5F2FA" stroke-width="3"/>
+<text x="87.5" y="325.1" font-size="13" font-weight="700" text-anchor="middle" fill="#F5F2FA">Morado (262°)</text>
+<line x1="230" y1="265" x2="211.5" y2="104.1" stroke="#F5F2FA" stroke-width="2" stroke-dasharray="5 4"/>
+<circle cx="211.5" cy="104.1" r="13" fill="#E22B3F" stroke="#F5F2FA" stroke-width="3"/>
+<text x="233.5" y="90.1" font-size="13" font-weight="700" text-anchor="start" fill="#F5F2FA">Rojo (353°)</text>
+<circle cx="230" cy="265" r="57" fill="#1a0f2e"/>
+<text x="230" y="261" font-size="12" text-anchor="middle" fill="#9B8FC0">~90° de</text>
+<text x="230" y="278" font-size="12" text-anchor="middle" fill="#9B8FC0">distancia</text>
+<rect x="460" y="80" width="60" height="60" rx="10" fill="#1A0F2E" stroke="#3d2f5c" stroke-width="2"/>
+<text x="532" y="100" font-size="14" font-weight="700" fill="#F5F2FA">Morado oscuro</text>
+<text x="532" y="118" font-size="12" fill="#9B8FC0">#1A0F2E</text>
+<text x="532" y="135" font-size="10" fill="#9B8FC0">Navbar, hero y fondos</text>
+<rect x="675" y="80" width="60" height="60" rx="10" fill="#7B5CB0" stroke="#3d2f5c" stroke-width="2"/>
+<text x="747" y="100" font-size="14" font-weight="700" fill="#F5F2FA">Morado</text>
+<text x="747" y="118" font-size="12" fill="#9B8FC0">#7B5CB0</text>
+<text x="747" y="135" font-size="10" fill="#9B8FC0">Botones secundarios y links</text>
+<rect x="460" y="168" width="60" height="60" rx="10" fill="#E22B3F" stroke="#3d2f5c" stroke-width="2"/>
+<text x="532" y="188" font-size="14" font-weight="700" fill="#F5F2FA">Rojo</text>
+<text x="532" y="206" font-size="12" fill="#9B8FC0">#E22B3F</text>
+<text x="532" y="223" font-size="10" fill="#9B8FC0">Comprar, precios y ofertas</text>
+<rect x="675" y="168" width="60" height="60" rx="10" fill="#0A0A0A" stroke="#3d2f5c" stroke-width="2"/>
+<text x="747" y="188" font-size="14" font-weight="700" fill="#F5F2FA">Negro</text>
+<text x="747" y="206" font-size="12" fill="#9B8FC0">#0A0A0A</text>
+<text x="747" y="223" font-size="10" fill="#9B8FC0">Fondo general</text>
+<rect x="460" y="256" width="60" height="60" rx="10" fill="#F5F2FA" stroke="#3d2f5c" stroke-width="2"/>
+<text x="532" y="276" font-size="14" font-weight="700" fill="#F5F2FA">Blanco</text>
+<text x="532" y="294" font-size="12" fill="#9B8FC0">#F5F2FA</text>
+<text x="532" y="311" font-size="10" fill="#9B8FC0">Texto principal</text>
+<rect x="675" y="256" width="60" height="60" rx="10" fill="#9B8FC0" stroke="#3d2f5c" stroke-width="2"/>
+<text x="747" y="276" font-size="14" font-weight="700" fill="#F5F2FA">Lavanda</text>
+<text x="747" y="294" font-size="12" fill="#9B8FC0">#9B8FC0</text>
+<text x="747" y="311" font-size="10" fill="#9B8FC0">Texto secundario</text>
+<rect x="460" y="344" width="60" height="60" rx="10" fill="#1C1628" stroke="#3d2f5c" stroke-width="2"/>
+<text x="532" y="364" font-size="14" font-weight="700" fill="#F5F2FA">Tarjeta</text>
+<text x="532" y="382" font-size="12" fill="#9B8FC0">#1C1628</text>
+<text x="532" y="399" font-size="10" fill="#9B8FC0">Fondo de tarjetas</text>
+<rect x="675" y="344" width="60" height="60" rx="10" fill="#3D2F5C" stroke="#3d2f5c" stroke-width="2"/>
+<text x="747" y="364" font-size="14" font-weight="700" fill="#F5F2FA">Borde</text>
+<text x="747" y="382" font-size="12" fill="#9B8FC0">#3D2F5C</text>
+<text x="747" y="399" font-size="10" fill="#9B8FC0">Bordes y separadores</text>
+<text x="460" y="450" font-size="13" fill="#F5F2FA">Tipografía: <tspan font-weight="700">Sora</tspan> 400 · 600 · 700</text>
+</svg>

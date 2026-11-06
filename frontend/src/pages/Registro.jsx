@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { PanelMarca } from './Login';
+import { validarRegistro } from '../validaciones';
 
 export default function Registro() {
   const { registro } = useAuth();
@@ -13,6 +14,8 @@ export default function Registro() {
   async function enviar(e) {
     e.preventDefault();
     setError('');
+    const invalido = validarRegistro(form);
+    if (invalido) return setError(invalido);
     try {
       await registro(form.nombre, form.email, form.password);
       navigate('/');

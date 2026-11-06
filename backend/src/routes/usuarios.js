@@ -8,12 +8,36 @@ const router = express.Router();
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SALT_ROUNDS = 10;
 
+// Freno contra fuerza bruta: 5 intentos fallidos por email cada 15 minutos
+const MAX_INTENTOS = 5;
+const VENTANA_MS = 15 * 60 * 1000;
+const intentosFallidos = new Map(); // email -> { cantidad, desde }
+
+function bloqueado(email) {
+  const r = intentosFallidos.get(email);
+  if (!r) return false;
+  if (Date.now() - r.desde > VENTANA_MS) { intentosFallidos.delete(email); return false; }
+  return r.cantidad >= MAX_INTENTOS;
+}
+
+function sumarFallo(email) {
+  const r = intentosFallidos.get(email);
+  if (!r || Date.now() - r.desde > VENTANA_MS) intentosFallidos.set(email, { cantidad: 1, desde: Date.now() });
+  else r.cantidad++;
+}
+
 // POST /usuarios/registro  -> crea un usuario siempre con rol "cliente"
 router.post('/registro', async (req, res) => {
   try {
     const { nombre, email, password } = req.body;
     if (!nombre || !email || !password) {
       return res.status(400).json({ error: 'Nombre, email y contraseña son obligatorios' });
+    }
+    if (typeof nombre !== 'string' || typeof email !== 'string' || typeof password !== 'string') {
+      return res.status(400).json({ error: 'Los datos enviados no son válidos' });
+    }
+    if (nombre.trim().length > 100 || email.length > 150) {
+      return res.status(400).json({ error: 'El nombre o el email son demasiado largos' });
     }
     if (!EMAIL_RE.test(email)) {
       return res.status(400).json({ error: 'El email no es válido' });
@@ -48,15 +72,21 @@ router.post('/login', async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({ error: 'Email y contraseña son obligatorios' });
     }
+    const emailNorm = String(email).trim().toLowerCase();
+    if (bloqueado(emailNorm)) {
+      return res.status(429).json({ error: 'Demasiados intentos fallidos. Probá de nuevo en 15 minutos.' });
+    }
     const [rows] = await db.query(
       'SELECT id, nombre, email, contrasena_hash, rol FROM usuario WHERE email = ?',
-      [email.trim().toLowerCase()]
+      [emailNorm]
     );
     const u = rows[0];
     // Mismo mensaje si no existe el email o si la contraseña es incorrecta
-    if (!u || !(await bcrypt.compare(password, u.contrasena_hash))) {
+    if (!u || !(await bcrypt.compare(String(password), u.contrasena_hash))) {
+      sumarFallo(emailNorm);
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
+    intentosFallidos.delete(emailNorm);
     const token = jwt.sign({ id: u.id, nombre: u.nombre, rol: u.rol }, process.env.JWT_SECRET, {
       expiresIn: process.env.JWT_EXPIRES || '2h',
     });

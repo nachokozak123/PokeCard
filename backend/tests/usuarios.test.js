@@ -68,4 +68,27 @@ describe('POST /usuarios/login', () => {
     expect(res.status).toBe(401);
     expect(res.body.token).toBeUndefined();
   });
+
+  test('después de 5 intentos fallidos bloquea el login (429)', async () => {
+    db.query.mockResolvedValue([[]]);
+    for (let i = 0; i < 5; i++) {
+      await request(app).post('/usuarios/login').send({ email: 'brock@mail.com', password: 'mala' });
+    }
+    const res = await request(app).post('/usuarios/login').send({ email: 'brock@mail.com', password: 'mala' });
+    expect(res.status).toBe(429);
+  });
 });
+
+describe('Errores generales', () => {
+  test('un JSON mal formado devuelve 400 en JSON', async () => {
+    const res = await request(app).post('/usuarios/login').set('Content-Type', 'application/json').send('{"email":');
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/JSON/);
+  });
+
+  test('una ruta inexistente devuelve 404', async () => {
+    const res = await request(app).get('/no-existe');
+    expect(res.status).toBe(404);
+  });
+});
+

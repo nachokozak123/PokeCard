@@ -3,6 +3,13 @@ const express = require('express');
 const db = require('../db');
 const { verificarToken, soloAdmin } = require('../middleware/auth');
 
+// Nombre repetido (ej. dos categorías iguales) -> 409 en lugar de 500
+function errorGuardar(e, res) {
+  if (e.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'Ya existe un registro con ese nombre' });
+  console.error(e);
+  return res.status(500).json({ error: 'Error del servidor' });
+}
+
 function crearRouter({ tabla, campos, lecturaPublica }) {
   const router = express.Router();
   const permisosLectura = lecturaPublica ? [] : [verificarToken, soloAdmin];
@@ -27,8 +34,7 @@ function crearRouter({ tabla, campos, lecturaPublica }) {
       );
       res.status(201).json({ id: r.insertId, ...req.body });
     } catch (e) {
-      console.error(e);
-      res.status(500).json({ error: 'Error del servidor' });
+      errorGuardar(e, res);
     }
   });
 
@@ -42,8 +48,7 @@ function crearRouter({ tabla, campos, lecturaPublica }) {
       if (r.affectedRows === 0) return res.status(404).json({ error: 'No encontrado' });
       res.json({ id: Number(req.params.id), ...req.body });
     } catch (e) {
-      console.error(e);
-      res.status(500).json({ error: 'Error del servidor' });
+      errorGuardar(e, res);
     }
   });
 

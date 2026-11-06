@@ -7,6 +7,7 @@ export default function AdminLayout() {
       <nav className="tabs">
         <NavLink to="/admin" end>Dashboard</NavLink>
         <NavLink to="/admin/productos">Productos</NavLink>
+        <NavLink to="/admin/pedidos">Pedidos</NavLink>
       </nav>
       <Outlet />
     </main>

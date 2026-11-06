@@ -69,3 +69,11 @@ describe('Dashboard', () => {
     expect(res.body.stockBajo).toHaveLength(1);
   });
 });
+
+describe('Categorías', () => {
+  test('una categoría repetida devuelve 409', async () => {
+    db.query.mockRejectedValueOnce(Object.assign(new Error('dup'), { code: 'ER_DUP_ENTRY' }));
+    const res = await request(app).post('/categorias').set(auth).send({ nombre: 'Sobres' });
+    expect(res.status).toBe(409);
+  });
+});
