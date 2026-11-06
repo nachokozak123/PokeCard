@@ -2,7 +2,7 @@
 
 > *"Cartas únicas, compras seguras."*
 > Tienda online de cartas coleccionables Pokémon.
-> Las partes marcadas con **[A COMPLETAR]** dependen de datos que todavía no existen: la dirección del local (y la triangulación que sale de ella) y el archivo de Sweet Home 3D.
+> La parte marcada con **[A COMPLETAR]** (el archivo de Sweet Home 3D) se tiene que hacer en ese programa.
 
 ## Índice
 
@@ -533,22 +533,25 @@ PokeCard es principalmente una tienda **online**, con un local de 10 × 8 m para
 
 | | |
 |---|---|
-| **Dirección** | **[A COMPLETAR]** (calle, número, localidad) |
+| **Dirección** | Anacleto Rojas 60, Monte Grande (CP 1842), partido de Esteban Echeverría, provincia de Buenos Aires *(dirección ficticia, para el proyecto)* |
 | **Horario del local** | Lunes a viernes de 10 a 19 h; sábados de 10 a 14 h |
 | **Tienda online** | Todos los días, en `pokecard.com.ar` (dominio propuesto) |
 | **Email** | `contacto@pokecard.com.ar` |
 | **Redes sociales** | `@pokecard` (Instagram y TikTok) |
 
 ### 10.3 Triangulación de medios de transporte y ubicación
-Una vez definida la dirección, se ubica el local en Google Maps y se marcan las tres referencias de transporte más cercanas. Las tres forman un triángulo con el local adentro, que muestra cómo llegar desde cualquier lado:
+El local está en el centro de Monte Grande, dentro del triángulo que forman tres puntos de acceso. Así se llega en tren, en colectivo o en auto, y siempre a menos de 6 cuadras caminando.
 
-| Vértice | Medio | Línea / estación | Distancia a pie |
+![Triangulación de transporte](marketing/triangulacion.png)
+
+| Vértice | Medio | Referencia | Distancia a pie |
 |---|---|---|---|
-| A | Colectivo | **[A COMPLETAR]** | **[A COMPLETAR]** |
-| B | Tren / subte | **[A COMPLETAR]** | **[A COMPLETAR]** |
-| C | Avenida principal / estacionamiento | **[A COMPLETAR]** | **[A COMPLETAR]** |
+| A | Tren | **Estación Monte Grande**, línea **Roca** (ramal Constitución – Ezeiza) | 283 m (≈ 4 min) |
+| B | Colectivo | Parada **Plaza Mitre**: líneas **51, 394 y 501** | 440 m (≈ 6 min) |
+| C | Avenida principal | **Av. Dardo Rocha** (acceso en auto y estacionamiento) | 208 m (≈ 3 min) |
 
-Captura del mapa con el triángulo dibujado: **[A COMPLETAR]** (`docs/marketing/triangulacion.png`). Estos datos dependen de la dirección real del local.
+- Las ubicaciones y las distancias salen de OpenStreetMap. Las líneas de colectivo son las que figuran como habituales en la zona, así que conviene confirmarlas en una app de transporte.
+- El mapa se genera desde [`marketing/triangulacion.html`](marketing/triangulacion.html) (Leaflet + OpenStreetMap).
 
 ### 10.4 Isotipo
 El **isotipo** es el símbolo de la marca sin texto: la ilustración circular de [`frontend/public/logo.png`](../frontend/public/logo.png), un Gengar sonriente que sostiene una carta sobre fondo morado oscuro. Se usa como favicon y en el navbar (40 × 40 px, recortado en círculo).
@@ -672,7 +675,7 @@ Folleto A4 apaisado, plegado en tres cuerpos, con la paleta y la tipografía ins
 | **Exterior** | Contacto: dirección, horarios y email. | QR a la tienda y plano del local con los QR de cada sector. | Isotipo, nombre, slogan y sello "Autenticidad verificada". |
 | **Interior** | ¿Quiénes somos?: misión, visión y valores. | Productos con precios y filtros para coleccionistas. | ¿Cómo comprar? en 4 pasos y garantía de autenticidad. |
 
-Pendiente: la **dirección** del local (10.2). Al completarla, se reemplaza `[Dirección del local]` en el HTML y se vuelve a exportar el PDF.
+Si cambia algún dato, se edita el HTML y se vuelve a exportar el PDF.
 
 ### 10.13 Códigos QR de los sectores
 Cada sector del local (y el tríptico) tiene un QR que lleva a la sección correspondiente del sitio. Están en [`marketing/qr/`](marketing/qr/), en SVG (para imprimir en cualquier tamaño) y PNG, en morado oscuro `#1A0F2E` sobre blanco, con corrección de errores alta.
