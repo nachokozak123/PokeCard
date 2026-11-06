@@ -8,24 +8,30 @@ function claveCarrito(usuario) {
   return usuario ? `carrito_${usuario.id}` : 'carrito_invitado';
 }
 
+function leerCarrito(clave) {
+  try {
+    return JSON.parse(localStorage.getItem(clave)) || [];
+  } catch {
+    return [];
+  }
+}
+
 export function CarritoProvider({ children }) {
   const { usuario } = useAuth();
-  const [items, setItems] = useState([]);
+  const clave = claveCarrito(usuario);
+  // El carrito se lee de localStorage al crear el estado, así no se pisa con uno vacío al recargar
+  const [carrito, setCarrito] = useState(() => ({ clave, items: leerCarrito(clave) }));
 
-  // Cuando cambia el usuario, carga su carrito
-  useEffect(() => {
-    try {
-      const guardado = JSON.parse(localStorage.getItem(claveCarrito(usuario))) || [];
-      setItems(guardado);
-    } catch {
-      setItems([]);
-    }
-  }, [usuario?.id]);
+  // Si cambia el usuario (login / logout), se carga el carrito de ese usuario
+  if (carrito.clave !== clave) setCarrito({ clave, items: leerCarrito(clave) });
 
-  // Guarda el carrito del usuario actual
+  // Guarda el carrito siempre con la clave de su dueño
   useEffect(() => {
-    localStorage.setItem(claveCarrito(usuario), JSON.stringify(items));
-  }, [items, usuario?.id]);
+    localStorage.setItem(carrito.clave, JSON.stringify(carrito.items));
+  }, [carrito]);
+
+  const items = carrito.items;
+  const setItems = (cambio) => setCarrito((c) => ({ ...c, items: cambio(c.items) }));
 
   function agregar(p, cantidad = 1) {
     setItems((prev) => {
@@ -42,7 +48,7 @@ export function CarritoProvider({ children }) {
   const cambiarCantidad = (id, cantidad) =>
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, cantidad: Math.max(1, Math.min(cantidad, i.stock)) } : i)));
   const quitar = (id) => setItems((prev) => prev.filter((i) => i.id !== id));
-  const vaciar = () => setItems([]);
+  const vaciar = () => setItems(() => []);
 
   const cantidadTotal = items.reduce((s, i) => s + i.cantidad, 0);
   const subtotal = items.reduce((s, i) => s + i.precio * i.cantidad, 0);

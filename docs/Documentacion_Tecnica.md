@@ -2,7 +2,7 @@
 
 > *"Cartas únicas, compras seguras."*
 > Tienda online de cartas coleccionables Pokémon.
-> Las partes marcadas con **[A COMPLETAR]** necesitan material que no está en el repositorio (fotos, direcciones, archivos de diseño).
+> Las partes marcadas con **[A COMPLETAR]** dependen de datos que todavía no existen: la dirección del local (y la triangulación que sale de ella) y el archivo de Sweet Home 3D.
 
 ## Índice
 
@@ -28,9 +28,9 @@ PokeCard es una aplicación web de comercio electrónico para vender cartas cole
 Este documento describe cómo está construido PokeCard: su arquitectura, los datos, el comportamiento, las restricciones, las pruebas, el despliegue y la identidad institucional. Sirve como referencia para el equipo de desarrollo, los docentes que evalúan el proyecto y cualquier persona que tenga que mantenerlo en el futuro.
 
 ### 1.3 Alcance
-**Incluye:** registro e inicio de sesión con roles, catálogo con filtros, detalle de producto, carrito, checkout con **pago simulado**, historial de pedidos del cliente, CRUD de productos, gestión de categorías y proveedores por API y dashboard administrativo.
+**Incluye:** registro e inicio de sesión con roles, catálogo con filtros, detalle de producto, carrito, checkout con **pago simulado**, historial de pedidos del cliente, gestión de pedidos y sus estados por el admin, CRUD de productos, gestión de categorías y proveedores por API y dashboard administrativo.
 
-**No incluye (por ahora):** pasarela de pago real, envíos y seguimiento, gestión de estados de pedidos por el admin (RF-15 parcial), recuperación de contraseña ni pantallas de administración de categorías y proveedores (solo existe la API).
+**No incluye (por ahora):** pasarela de pago real, envíos con seguimiento del correo, recuperación de contraseña ni pantallas de administración de categorías y proveedores (solo existe la API).
 
 ### 1.4 Objetivos de la documentación
 - Dejar registrado **qué** hace el sistema y **cómo** lo hace, con referencias al código.
@@ -70,7 +70,7 @@ Ver el detalle completo en [`Requerimientos.md`](Requerimientos.md).
 | Categorías y proveedores (API) | RF-12 |
 | Dashboard administrativo | RF-13 |
 | Carrito y compra con pago simulado | RF-14 |
-| Mis pedidos | RF-15 (parcial) |
+| Mis pedidos y gestión de pedidos del admin | RF-15 |
 
 ### 2.4 Restricciones generales
 - Tecnologías fijadas por el proyecto: **Node.js 18+, Express, MySQL 8, React 18 y Vite 5**.
@@ -98,13 +98,14 @@ Ver el detalle completo en [`Requerimientos.md`](Requerimientos.md).
 | Frontend | Carrito | `frontend/src/CarritoContext.jsx` | Productos del carrito, guardados en `localStorage`. |
 | Frontend | Cliente HTTP | `frontend/src/api.js` | Llama a la API y agrega el token. |
 | Frontend | Ruta protegida | `frontend/src/components/RutaProtegida.jsx` | Redirige si no hay sesión o si el usuario no es admin. |
-| Frontend | Páginas | `frontend/src/pages/` | Home, Login, Registro, Catálogo, Detalle, Carrito, Checkout, Mis pedidos, Admin. |
-| Backend | App | `backend/src/app.js` | Configura Express, CORS, JSON y monta las rutas. |
+| Frontend | Validaciones | `frontend/src/validaciones.js` | Luhn, vencimiento y datos del registro (con tests de Vitest). |
+| Frontend | Páginas | `frontend/src/pages/` | Home, Login, Registro, Catálogo, Detalle, Carrito, Checkout, Mis pedidos y Admin (Dashboard, Productos, Pedidos). |
+| Backend | App | `backend/src/app.js` | Configura Express, CORS, JSON, monta las rutas y maneja los errores generales. |
 | Backend | Autenticación | `backend/src/middleware/auth.js` | `verificarToken` (401) y `soloAdmin` (403). |
-| Backend | Usuarios | `backend/src/routes/usuarios.js` | Registro con bcrypt, login con JWT y listado. |
+| Backend | Usuarios | `backend/src/routes/usuarios.js` | Registro con bcrypt, login con JWT (con freno de intentos) y listado. |
 | Backend | Productos | `backend/src/routes/productos.js` | Listado con filtros y CRUD. |
 | Backend | Catálogos | `backend/src/routes/catalogos.js` | CRUD de categorías y proveedores. |
-| Backend | Pedidos | `backend/src/routes/pedidos.js` | Compra con pago simulado en una transacción. |
+| Backend | Pedidos | `backend/src/routes/pedidos.js` | Compra con pago simulado en una transacción, detalle y cambio de estado. |
 | Backend | Admin | `backend/src/routes/admin.js` | Métricas del dashboard. |
 | Datos | Base de datos | `database/schema.sql` | Tablas, claves y restricciones. |
 
@@ -239,6 +240,8 @@ erDiagram
 | E6 | Admin | Inicia sesión. | Se lo redirige a `/admin` (dashboard con métricas). |
 | E7 | Admin | Crea, edita o elimina un producto. | El catálogo se actualiza; si el producto ya se vendió, no se borra (409). |
 | E8 | Cliente | Intenta entrar a `/admin`. | Se lo redirige al inicio; la API respondería 403. |
+| E9 | Admin | En **Panel admin → Pedidos** ve el detalle de un pedido y lo marca como enviado o lo cancela. | Cambia el estado; si lo cancela, el stock vuelve al inventario. |
+| E10 | Cliente | Paga con una tarjeta mal escrita o vencida. | Se muestra el error en el formulario; no se crea el pedido. |
 
 ### 5.2 Inicio de sesión
 
@@ -272,15 +275,16 @@ sequenceDiagram
 | Dónde | Campo | Regla |
 |---|---|---|
 | Registro | nombre, email, contraseña | Obligatorios; email con formato válido; contraseña de 6 caracteres o más; email no repetido (409). |
-| Login | email, contraseña | Obligatorios (400). |
+| Login | email, contraseña | Obligatorios (400); después de 5 intentos fallidos con el mismo email se bloquea 15 minutos (429). |
 | Producto | nombre | Obligatorio. |
 | Producto | precio | Número mayor o igual a 0. |
 | Producto | stock | Entero mayor o igual a 0. |
 | Producto | categoría / proveedor | La categoría es obligatoria; ambos deben existir (400). |
 | Catálogo | orden | Solo `precio_asc`, `precio_desc` o `nombre` (lista permitida contra inyección SQL). |
 | Pedido | ítems | Carrito no vacío; `producto_id` y `cantidad` enteros, cantidad de 1 o más. |
-| Pedido | tarjeta | Solo dígitos, 13 a 19; titular de 3 caracteres o más; vencimiento `MM/AA`; CVC de 3 o 4 dígitos. En el frontend además se valida con el **algoritmo de Luhn** y que la fecha sea futura. |
-| Pedido | stock | Debe alcanzar para cada producto (409). |
+| Pedido | tarjeta | Solo dígitos, de 13 a 19 y válido según el **algoritmo de Luhn**; titular de 3 caracteres o más; vencimiento `MM/AA` no vencido (vale hasta el último día de ese mes); CVC de 3 o 4 dígitos. Se valida igual en el frontend (`validaciones.js`) y en el backend. |
+| Pedido | estado | Solo `pendiente → pagado / cancelado` y `pagado → enviado / cancelado`; los pedidos enviados o cancelados no cambian (409). |
+| Pedido | stock | Debe alcanzar para cada producto (409). Si el mismo producto viene repetido en el carrito, se suman las cantidades. |
 
 Las validaciones del frontend son para dar una buena experiencia; las del backend son las que valen, porque el cliente se puede saltear.
 
@@ -289,13 +293,15 @@ Todas las respuestas de error son JSON con la forma `{ "error": "mensaje claro" 
 
 | Código | Cuándo |
 |---|---|
-| 400 | Datos inválidos o faltantes. |
+| 400 | Datos inválidos o faltantes, o un JSON mal formado. |
 | 401 | Sin token, token inválido o vencido, credenciales incorrectas. |
 | 402 | Pago rechazado por el "banco" (simulación). |
 | 403 | El usuario no es admin. |
 | 404 | Producto o ruta inexistente. |
-| 409 | Email repetido, stock insuficiente, producto con pedidos asociados. |
-| 500 | Error inesperado del servidor (se registra con `console.error` y no se muestran detalles internos). |
+| 409 | Email o categoría repetidos, stock insuficiente, producto con pedidos asociados, cambio de estado no permitido. |
+| 413 | La petición es demasiado grande (más de 100 KB). |
+| 429 | Demasiados intentos de login fallidos. |
+| 500 | Error inesperado del servidor (se registra con `console.error` y no se muestran detalles internos). Un manejador general en `app.js` atrapa cualquier error no controlado. |
 
 - En la compra, ante cualquier error se hace **rollback** de la transacción: nunca queda un pedido a medias.
 - En el frontend, los errores se muestran en pantalla con la clase `.error`; si el token venció, el usuario tiene que volver a iniciar sesión.
@@ -324,11 +330,15 @@ Todas las respuestas de error son JSON con la forma `{ "error": "mensaje claro" 
 - Secretos en `.env`, fuera del repositorio (RNF-06).
 - El número completo de la tarjeta **no se guarda**: solo se devuelven los últimos 4 dígitos.
 - Los precios se toman siempre de la base de datos, no del cliente.
+- Freno contra **fuerza bruta** en el login: 5 intentos fallidos por email cada 15 minutos (429).
+- **CORS configurable** con `CORS_ORIGIN` para aceptar solo el dominio del frontend en producción.
+- Límite de 100 KB por petición y sin el encabezado `X-Powered-By` (no se revela la tecnología del servidor).
+- Un cliente solo puede ver sus propios pedidos; si pide uno ajeno, la API responde 404 para no revelar que existe.
 
 ### 6.4 Normativas aplicables
 - **Ley 25.326 de Protección de Datos Personales (Argentina):** se piden solo los datos necesarios (nombre y email), las contraseñas se guardan encriptadas y el usuario puede pedir que se borren sus datos.
 - **Ley 24.240 de Defensa del Consumidor** y normativa de comercio electrónico: mostrar precio final, información clara del producto y la posibilidad de arrepentirse de la compra ("botón de arrepentimiento").
-- **Ley 11.723 de Propiedad Intelectual** y marcas: "Pokémon" y sus personajes son marcas de sus dueños. PokeCard es un revendedor y usa una identidad visual propia (nombre, logo y paleta), sin copiar logotipos oficiales.
+- **Ley 11.723 de Propiedad Intelectual** y marcas: "Pokémon", sus personajes y la Pokébola son marcas de sus dueños. PokeCard es un revendedor: no usa los logotipos oficiales de la franquicia, pero su isotipo es una ilustración de Gengar con una carta. Para un uso comercial real, el isotipo tendría que reemplazarse por un personaje original o contar con licencia. Por eso el tríptico incluye la leyenda de marcas.
 - **PCI DSS** (referencia): al ser un pago simulado no se procesan tarjetas reales; si se integra un pago real, se debe usar una pasarela certificada (ej. Mercado Pago) y nunca guardar los datos de la tarjeta.
 - **WCAG 2.1** (recomendación de accesibilidad): contraste suficiente, textos alternativos y formularios con etiquetas.
 
@@ -339,7 +349,8 @@ Todas las respuestas de error son JSON con la forma `{ "error": "mensaje claro" 
 - El carrito vive en el navegador: no se sincroniza entre dispositivos.
 - Las imágenes de los productos se guardan como URL; no hay subida de archivos.
 - Categorías y proveedores se gestionan solo por API (sin pantalla).
-- CORS está abierto a cualquier origen; en producción habría que limitarlo al dominio del frontend.
+- El freno de intentos de login se guarda en memoria: se reinicia si se reinicia el servidor y no se comparte entre varias instancias.
+- Si no se configura `CORS_ORIGIN`, la API acepta peticiones de cualquier origen (pensado solo para desarrollo).
 
 ---
 
@@ -355,12 +366,12 @@ npm test
 
 | Archivo | Casos |
 |---|---|
-| `usuarios.test.js` (5) | Guarda el hash y fuerza el rol cliente; email repetido (409); contraseña corta (400); login correcto devuelve un JWT válido; contraseña incorrecta (401). |
+| `usuarios.test.js` (8) | Guarda el hash y fuerza el rol cliente; email repetido (409); contraseña corta (400); login correcto devuelve un JWT válido; contraseña incorrecta (401); bloqueo después de 5 intentos (429); JSON mal formado (400); ruta inexistente (404). |
 | `permisos.test.js` (5) | Sin token (401); token inválido (401); cliente no crea productos (403); cliente no ve el dashboard (403); admin crea un producto (201). |
-| `productos.test.js` (7) | Listado; producto inexistente (404); orden con lista permitida; precio negativo (400); editar inexistente (404); eliminar con pedidos (409); métricas del dashboard. |
-| `pedidos.test.js` (6) | Sin token (401); carrito vacío (400); tarjeta inválida (400); stock insuficiente (409); tarjeta rechazada (402); pago aprobado con total correcto y sin el número completo. |
+| `productos.test.js` (8) | Listado; producto inexistente (404); orden con lista permitida; precio negativo (400); editar inexistente (404); eliminar con pedidos (409); métricas del dashboard; categoría repetida (409). |
+| `pedidos.test.js` (16) | Compra: sin token (401); carrito vacío (400); tarjeta que no cumple Luhn (400); tarjeta vencida (400); stock insuficiente (409); producto repetido en el carrito; tarjeta rechazada (402); pago aprobado con total correcto y sin el número completo. Gestión: el cliente no ve todos los pedidos (403); el admin sí; un pedido ajeno da 404; el dueño ve el detalle; el cliente no cambia estados (403); estado inexistente (400); un enviado no se cancela (409); cancelar devuelve el stock. |
 
-**Total: 23 tests.**
+**Total backend: 37 tests.**
 
 ### 7.2 Pruebas de integración
 Los tests con Supertest ya prueban la integración **rutas + middleware + validaciones** sobre la app de Express real. Para probar contra MySQL real:
@@ -372,6 +383,7 @@ Los tests con Supertest ya prueban la integración **rutas + middleware + valida
 | I3 | Compra completa | Login como cliente y `POST /pedidos` con `4111 1111 1111 1111` | 201; aparece en `pedido` y `detalle_pedido`; baja el stock. |
 | I4 | Concurrencia de stock | Dos compras al mismo tiempo de un producto con stock 1 | Una da 201 y la otra 409; el stock queda en 0. |
 | I5 | Integridad | Borrar un producto que ya se vendió | 409; el producto sigue existiendo. |
+| I7 | Cancelación | `PATCH /pedidos/:id/estado` con `cancelado` sobre un pedido pagado | El pedido queda cancelado y el stock de sus productos vuelve a sumar. |
 | I6 | Front + API | Levantar ambos y comprar desde la interfaz | El pedido aparece en "Mis pedidos" y en el dashboard. |
 
 ### 7.3 Pruebas de funcionalidades web
@@ -382,12 +394,14 @@ Los tests con Supertest ya prueban la integración **rutas + middleware + valida
 | W2 | Login incorrecto | Contraseña errónea | Mensaje "Credenciales inválidas". |
 | W3 | Filtros | Filtrar por rareza "Rara Holo" y ordenar por precio | Solo productos holo, ordenados. |
 | W4 | Búsqueda | Buscar "Fuego" | Aparece "Carta Holo Fuego". |
-| W5 | Carrito | Agregar 2 productos, recargar la página | El carrito se mantiene. |
+| W5 | Carrito | Agregar 2 productos, recargar la página | El carrito se mantiene (se lee de `localStorage` al iniciar). Cada usuario tiene su propio carrito. |
 | W6 | Checkout sin sesión | Ir a `/checkout` sin login | Redirige a `/login`. |
 | W7 | Pago rechazado | Tarjeta válida terminada en `0002` | Mensaje de rechazo; no se crea pedido. |
 | W8 | Acceso admin | Cliente entra a `/admin` | Redirige al inicio. |
 | W9 | CRUD | Admin crea, edita y elimina un producto | Los cambios se ven en el catálogo. |
 | W10 | Logout | Cerrar sesión | Desaparece el menú de usuario y `/pedidos` redirige al login. |
+| W11 | Tarjeta inválida | Pagar con `1234 5678 9012 3456` o con vencimiento `01/20` | El formulario marca el error; no se crea pedido. |
+| W12 | Gestión de pedidos | Admin → **Pedidos** → **Ver**, **Marcar enviado** o **Cancelar** | Se ve el detalle y cambia el estado; al cancelar, el stock vuelve. |
 
 ### 7.4 Pruebas del frontend
 
@@ -402,14 +416,22 @@ Los tests con Supertest ya prueban la integración **rutas + middleware + valida
 | F7 | Accesibilidad | Lighthouse (pestaña Accesibilidad) | Puntaje de 90 o más; imágenes con `alt`. |
 | F8 | Rendimiento | Lighthouse (Rendimiento) sobre `vite build` | Puntaje de 80 o más. |
 
-*Mejora futura:* tests automáticos de componentes con **Vitest + React Testing Library**.
+**Tests automáticos del frontend (Vitest):** `frontend/src/__tests__/validaciones.test.js`, con **12 tests** de las validaciones del checkout y del registro: Luhn, vencimiento (mes actual, mes pasado, mes 13 y formato), errores por campo y datos del registro.
+
+```bash
+cd frontend
+npm test
+```
+
+*Mejora futura:* tests de componentes con React Testing Library.
 
 ### 7.5 Criterios de aceptación
-- Los **23 tests** del backend pasan (`npm test`).
+- Los **37 tests** del backend y los **12** del frontend pasan (`npm test` en cada carpeta), y `npm run build` del frontend compila sin errores.
 - Todos los RF marcados como "Hecho" en `Requerimientos.md` se pueden demostrar en la interfaz.
 - Ninguna contraseña se ve en texto plano en la base ni en las respuestas de la API.
 - Un cliente no puede acceder a ninguna función de admin (ni por la interfaz ni por la API).
-- Una compra aprobada crea el pedido y descuenta el stock; una rechazada no cambia nada.
+- Una compra aprobada crea el pedido y descuenta el stock; una rechazada, con tarjeta inválida o vencida, no cambia nada.
+- Cancelar un pedido devuelve el stock.
 - La interfaz respeta la identidad visual y funciona en celular.
 - Las pruebas W1–W10 y F1–F6 dan el resultado esperado.
 
@@ -428,18 +450,18 @@ Los tests con Supertest ya prueban la integración **rutas + middleware + valida
 | Frontend | Vite 5 (`npm run dev` → `http://localhost:5173`) |
 | Backend | `node --watch` (`npm run dev` → `http://localhost:3001`) |
 
-Los pasos de instalación están en el [`README.md`](../README.md#cómo-ejecutarlo). Variables del backend (`backend/.env`): `PORT`, `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `JWT_SECRET`, `JWT_EXPIRES`. Variable del frontend (`frontend/.env`): `VITE_API_URL`.
+Los pasos de instalación están en el [`README.md`](../README.md#cómo-ejecutarlo). Variables del backend (`backend/.env`): `PORT`, `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `JWT_SECRET`, `JWT_EXPIRES`, `CORS_ORIGIN`. Variable del frontend (`frontend/.env`): `VITE_API_URL`.
 
 ### 8.2 Entorno de producción
 Propuesta:
 - **Base de datos:** MySQL 8 administrado (ej. Railway, Aiven o un VPS), con usuario propio de la app (no `root`) y solo los permisos necesarios.
 - **Backend:** Node.js en un servicio como Render o Railway, o en un VPS con **PM2**, ejecutado con `npm start`.
 - **Frontend:** `npm run build` genera `frontend/dist/`, que se publica en Netlify, Vercel o detrás de Nginx.
-- **HTTPS** obligatorio, `JWT_SECRET` largo y aleatorio, CORS limitado al dominio del frontend.
+- **HTTPS** obligatorio, `JWT_SECRET` largo y aleatorio, y `CORS_ORIGIN=https://pokecard.com.ar` para limitar la API al dominio del frontend.
 
 ### 8.3 Publicación del sistema
 1. Hacer merge de los cambios a `main` mediante un Pull Request revisado.
-2. Correr `npm test` en `backend/` (no se publica si falla algún test).
+2. Correr `npm test` en `backend/` y en `frontend/` (no se publica si falla algún test).
 3. Aplicar en la base de producción las migraciones SQL nuevas (después de un respaldo).
 4. Publicar el backend y configurar sus variables de entorno.
 5. Configurar `VITE_API_URL` con la URL pública de la API y correr `npm run build`.
@@ -457,7 +479,7 @@ Propuesta:
 - **Correctivo:** los errores se cargan como *issues* en GitHub y se arreglan en una rama propia con su PR.
 - **Preventivo:** actualizar dependencias (`npm outdated`, `npm audit`) y verificar los respaldos.
 - **Evolutivo:** próximas funciones:
-  - gestión de estados de pedidos por el admin (completar RF-15);
+  - aviso por email cuando cambia el estado de un pedido;
   - pantallas de categorías y proveedores;
   - recuperación de contraseña;
   - pasarela de pago real.
@@ -507,50 +529,57 @@ Se usa un modelo **iterativo e incremental por etapas**: en cada entrega se anal
 | **Personalidad de marca** | Misteriosa y divertida, inspirada en el "morado Gengar" (tipo Fantasma). |
 
 ### 10.2 Lugar físico de la empresa
-PokeCard es principalmente una tienda **online**, con un local o punto de retiro para entregas y atención.
+PokeCard es principalmente una tienda **online**, con un local de 10 × 8 m para atención, retiro de pedidos y eventos de juego (ver el plano en [10.14](#1014-maquetado-físico--sweet-home-3d)).
 
-- **Dirección:** **[A COMPLETAR]** (calle, número, localidad).
-- **Horario de atención:** **[A COMPLETAR]** (ej. lunes a viernes de 10 a 19 h, sábados de 10 a 14 h).
-- **Contacto:** **[A COMPLETAR]** (email, teléfono, redes sociales).
-- **Fotos o mapa del lugar:** **[A COMPLETAR]**.
+| | |
+|---|---|
+| **Dirección** | **[A COMPLETAR]** (calle, número, localidad) |
+| **Horario del local** | Lunes a viernes de 10 a 19 h; sábados de 10 a 14 h |
+| **Tienda online** | Todos los días, en `pokecard.com.ar` (dominio propuesto) |
+| **Email** | `contacto@pokecard.com.ar` |
+| **Redes sociales** | `@pokecard` (Instagram y TikTok) |
 
 ### 10.3 Triangulación de medios de transporte y ubicación
-Ubicar el local en un mapa (Google Maps) y marcar las tres referencias de transporte más cercanas para formar el triángulo de acceso:
+Una vez definida la dirección, se ubica el local en Google Maps y se marcan las tres referencias de transporte más cercanas. Las tres forman un triángulo con el local adentro, que muestra cómo llegar desde cualquier lado:
 
-| Medio | Línea / estación | Distancia a pie |
-|---|---|---|
-| Colectivo | **[A COMPLETAR]** | **[A COMPLETAR]** |
-| Tren / subte | **[A COMPLETAR]** | **[A COMPLETAR]** |
-| Avenida principal / estacionamiento | **[A COMPLETAR]** | **[A COMPLETAR]** |
+| Vértice | Medio | Línea / estación | Distancia a pie |
+|---|---|---|---|
+| A | Colectivo | **[A COMPLETAR]** | **[A COMPLETAR]** |
+| B | Tren / subte | **[A COMPLETAR]** | **[A COMPLETAR]** |
+| C | Avenida principal / estacionamiento | **[A COMPLETAR]** | **[A COMPLETAR]** |
 
-Adjuntar la captura del mapa con el triángulo dibujado: **[A COMPLETAR]** (`docs/marketing/triangulacion.png`).
+Captura del mapa con el triángulo dibujado: **[A COMPLETAR]** (`docs/marketing/triangulacion.png`). Estos datos dependen de la dirección real del local.
 
 ### 10.4 Isotipo
-El **isotipo** es el símbolo de la marca sin texto: el ícono circular de [`frontend/public/logo.png`](../frontend/public/logo.png). Se usa como favicon y en el navbar (40 × 40 px, recortado en círculo).
+El **isotipo** es el símbolo de la marca sin texto: la ilustración circular de [`frontend/public/logo.png`](../frontend/public/logo.png), un Gengar sonriente que sostiene una carta sobre fondo morado oscuro. Se usa como favicon y en el navbar (40 × 40 px, recortado en círculo).
 - Funciona solo, en tamaños chicos (favicon, perfil de redes sociales, sticker).
 - Tamaño mínimo recomendado: 24 px en pantalla y 1 cm impreso.
+- Ver la nota de propiedad intelectual en [6.4](#64-normativas-aplicables).
 
 ### 10.5 Logotipo
 El **logotipo** es el nombre **"PokeCard"** escrito en tipografía **Sora Bold (700)**. Así aparece en el navbar (`.marca`) y en el panel de login.
 - **Isologotipo:** isotipo a la izquierda y la palabra "PokeCard" a la derecha, separados por un espacio igual a la mitad del alto del isotipo.
 - Versiones: blanco sobre morado oscuro (principal) y morado oscuro sobre blanco (fondos claros).
-- **No se debe:** deformar, cambiar los colores, agregar sombras ni ponerlo sobre fondos que no tengan contraste.
+- **No se debe:** deformar, rotar, cambiar los colores, agregar sombras ni ponerlo sobre fondos que no tengan contraste (ejemplos en [10.9](#109-diversas-aplicaciones-del-logo)).
 
 ### 10.6 Círculo cromático y paleta institucional
-La paleta parte del **morado** (color principal, "morado Gengar") y usa su **complementario cálido**, el **rojo**, para llamar la atención (botones de compra y precios). En el círculo cromático, el morado y el rojo-anaranjado quedan casi opuestos, lo que genera contraste. El negro y el lavanda dan profundidad y el blanco, legibilidad.
+
+![Círculo cromático y paleta institucional](marketing/paleta_circulo_cromatico.svg)
+
+La paleta parte del **morado** (color principal, "morado Gengar", tono de ~262°) y lo combina con el **rojo** (~353°) para llamar la atención en botones de compra y precios. En el círculo cromático quedan a unos **90° de distancia**: no son complementarios (estarían a 180°), sino una combinación en escuadra que contrasta sin chocar. El morado oscuro y el negro dan profundidad, el lavanda suaviza los textos secundarios y el blanco da legibilidad.
 
 Paleta implementada en el sitio (`frontend/src/styles.css`):
 
-| Color | Muestra | Código | Variable CSS | Uso |
-|---|---|---|---|---|
-| Morado oscuro | ![](https://placehold.co/24x24/1a0f2e/1a0f2e.png) | `#1A0F2E` | `--morado-oscuro` | Navbar, hero y fondos principales. |
-| Morado | ![](https://placehold.co/24x24/7B5CB0/7B5CB0.png) | `#7B5CB0` | `--morado` | Botones secundarios, links y detalles. |
-| Rojo | ![](https://placehold.co/24x24/E22B3F/E22B3F.png) | `#E22B3F` | `--rojo` | Botones de compra, precios y ofertas. |
-| Negro | ![](https://placehold.co/24x24/0a0a0a/0a0a0a.png) | `#0A0A0A` | `--negro` | Fondo general. |
-| Blanco | ![](https://placehold.co/24x24/F5F2FA/F5F2FA.png) | `#F5F2FA` | `--blanco` | Texto principal. |
-| Lavanda | ![](https://placehold.co/24x24/9B8FC0/9B8FC0.png) | `#9B8FC0` | `--lavanda` | Texto secundario. |
-| Tarjeta | ![](https://placehold.co/24x24/1c1628/1c1628.png) | `#1C1628` | `--tarjeta` | Fondo de tarjetas de producto. |
-| Borde | ![](https://placehold.co/24x24/3d2f5c/3d2f5c.png) | `#3D2F5C` | `--borde` | Bordes y separadores. |
+| Color | Código | Variable CSS | Uso |
+|---|---|---|---|
+| Morado oscuro | `#1A0F2E` | `--morado-oscuro` | Navbar, hero y fondos principales. |
+| Morado | `#7B5CB0` | `--morado` | Botones secundarios, links y detalles. |
+| Rojo | `#E22B3F` | `--rojo` | Botones de compra, precios y ofertas. |
+| Negro | `#0A0A0A` | `--negro` | Fondo general. |
+| Blanco | `#F5F2FA` | `--blanco` | Texto principal. |
+| Lavanda | `#9B8FC0` | `--lavanda` | Texto secundario. |
+| Tarjeta | `#1C1628` | `--tarjeta` | Fondo de tarjetas de producto. |
+| Borde | `#3D2F5C` | `--borde` | Bordes y separadores. |
 
 **Tipografía institucional:** **Sora** (Google Fonts), pesos 400 (texto), 600 (destacados) y 700 (títulos y logotipo).
 
@@ -568,39 +597,46 @@ Paleta implementada en el sitio (`frontend/src/styles.css`):
 Los productos se filtran por **colección** (ej. Base Set) y **rareza** (Común, Rara Holo, etc.). Los datos de ejemplo están en `backend/src/seed.js`.
 
 ### 10.8 Merchandising
-Productos promocionales con la identidad de PokeCard (para regalar con compras grandes o vender aparte):
-- **Fundas y toploaders** con el isotipo.
-- **Playmat** (alfombra de juego) en morado oscuro con el logotipo.
-- **Caja de mazo (deck box)** negra con el isotipo en rojo.
-- **Stickers** circulares del isotipo para los paquetes.
-- **Bolsa / packaging** de envío en morado oscuro con el slogan.
-- **Remera** negra con el isologotipo en blanco para el personal y eventos.
-- **Tarjeta de agradecimiento** en cada pedido, con un QR al catálogo.
 
-Mockups del merchandising: **[A COMPLETAR]** (`docs/marketing/merchandising/`).
+![Merchandising de PokeCard](marketing/merchandising/merchandising.png)
+
+Productos promocionales con la identidad de PokeCard (para regalar con compras grandes o vender aparte):
+- **Remera** negra con el isologotipo para el personal y los eventos.
+- **Playmat** (alfombra de juego) en degradé morado con zonas para las cartas y el isologotipo.
+- **Caja de mazo (deck box)** negra con el isotipo enmarcado en rojo.
+- **Stickers** circulares del isotipo para cerrar los paquetes.
+- **Fundas protectoras** en morado, morado oscuro y rojo con el isotipo.
+- **Caja de envío** en morado oscuro con el isologotipo y el slogan.
+- **Tarjeta de agradecimiento** en cada pedido, con un QR a "Mis pedidos" (ver [10.9](#109-diversas-aplicaciones-del-logo)).
+
+Las láminas se generan desde [`marketing/identidad.html`](marketing/identidad.html), que usa la paleta y la tipografía institucionales.
 
 ### 10.9 Diversas aplicaciones del logo
+
+![Aplicaciones del logo](marketing/aplicaciones/aplicaciones_logo.png)
 
 | Aplicación | Versión del logo |
 |---|---|
 | Favicon del sitio | Isotipo |
 | Navbar y login del sitio | Isologotipo blanco sobre morado oscuro |
-| Redes sociales (foto de perfil) | Isotipo sobre morado oscuro |
-| Packaging y bolsas | Isologotipo con slogan |
-| Tarjeta personal / de agradecimiento | Isologotipo y QR |
-| Cartelería del local | Isologotipo grande sobre morado oscuro |
-| Merchandising | Isotipo en un color (blanco, rojo o morado) |
-| Comprobante de pago | Logotipo y número `PAY-xxxxxx` |
+| Redes sociales (foto de perfil) | Isotipo con borde rojo |
+| Cartelería del local | Isologotipo grande sobre morado oscuro, con marco rojo |
+| Tarjeta de agradecimiento | Isologotipo y QR sobre blanco |
+| Bolsa y packaging | Isotipo, logotipo y slogan |
+| Comprobante de pago | Isologotipo y número `PAY-xxxxxx` |
+| Merchandising | Isotipo o isologotipo (ver [10.8](#108-merchandising)) |
 
-Imágenes de las aplicaciones: **[A COMPLETAR]** (`docs/marketing/aplicaciones/`).
+La última fila de la lámina muestra los **usos prohibidos**: deformar, cambiar los colores, rotar, y agregar sombras o usar fondos sin contraste.
 
 ### 10.10 Estudio de identidad visual
-- **Concepto:** el morado y el tono "fantasma" hacen referencia al coleccionismo misterioso y nocturno; el rojo transmite energía y acción (comprar). El resultado es una marca juvenil pero confiable.
+- **Concepto:** el morado y el personaje tipo Fantasma hacen referencia al coleccionismo misterioso y nocturno; el rojo transmite energía y acción (comprar). El resultado es una marca juvenil pero confiable.
 - **Público:** se eligió un estilo oscuro y moderno, cercano a la estética gamer, que conecta con jugadores y coleccionistas.
 - **Tipografía:** Sora es geométrica, moderna y muy legible en pantalla; con un único tipo de letra en varios pesos se logra unidad.
+- **Color:** paleta reducida de morados con un único acento rojo reservado para las acciones (ver [10.6](#106-círculo-cromático-y-paleta-institucional)).
 - **Contraste:** el blanco `#F5F2FA` sobre el negro `#0A0A0A` y sobre el morado oscuro `#1A0F2E` supera la relación 4.5:1 que pide WCAG para texto normal.
-- **Formas:** bordes redondeados (8 px en botones, 18 px en el hero) que transmiten cercanía; el isotipo circular remite a la forma de la Pokébola sin copiarla.
+- **Formas:** bordes redondeados (8 px en botones, 12 px en paneles, 18 px en el hero) que transmiten cercanía; el isotipo circular funciona bien como avatar, sticker y favicon.
 - **Competencia:** las tiendas del rubro suelen tener diseños recargados o genéricos; PokeCard se diferencia con una paleta reducida y consistente.
+- **Punto a mejorar:** el isotipo usa un personaje de la franquicia. Para una marca comercial propia conviene diseñar una mascota original con el mismo estilo (ver [6.4](#64-normativas-aplicables)).
 
 ### 10.11 Manual de identidad / manual de usuario
 
@@ -609,7 +645,7 @@ Imágenes de las aplicaciones: **[A COMPLETAR]** (`docs/marketing/aplicaciones/`
 2. Usar solo la tipografía Sora (400, 600 y 700).
 3. Respetar el área de protección del logo: un margen igual al alto de la letra "P" alrededor del logotipo.
 4. Respetar el tamaño mínimo del isotipo (24 px o 1 cm).
-5. No deformar, rotar ni cambiar los colores del logo.
+5. No deformar, rotar ni cambiar los colores del logo (ver los usos prohibidos en [10.9](#109-diversas-aplicaciones-del-logo)).
 6. El rojo se reserva para las acciones principales (comprar, pagar, ofertas).
 
 **Manual de usuario (resumen)**
@@ -623,48 +659,84 @@ Imágenes de las aplicaciones: **[A COMPLETAR]** (`docs/marketing/aplicaciones/`
 | Ver mis compras | Menú **Mis pedidos**. |
 | (Admin) Ver métricas | Iniciar sesión como admin y entrar a **Panel admin**. |
 | (Admin) Cargar un producto | **Panel admin → Productos → + Nuevo producto**, completar los datos y guardar. |
+| (Admin) Gestionar pedidos | **Panel admin → Pedidos**: filtrar por estado, **Ver** el detalle, **Marcar enviado** o **Cancelar** (devuelve el stock). |
 
 ### 10.12 Tríptico informativo
 Folleto A4 apaisado, plegado en tres cuerpos, con la paleta y la tipografía institucionales.
 
+- **Para imprimir:** [`marketing/triptico.pdf`](marketing/triptico.pdf) (2 páginas: exterior e interior).
+- **Fuente editable:** [`marketing/triptico.html`](marketing/triptico.html). Se abre en Chrome y se exporta con *Imprimir → Guardar como PDF*, en A4 horizontal y sin márgenes.
+
 | Cara | Cuerpo izquierdo | Cuerpo central | Cuerpo derecho (tapa) |
 |---|---|---|---|
-| **Exterior** | Contacto, dirección, horarios y redes. | QR al sitio y mapa con la triangulación. | Isologotipo, slogan y una carta holo destacada sobre morado oscuro. |
-| **Interior** | ¿Quiénes somos? Misión, visión y diferencial. | Productos: cartas sueltas, sobres, mazos y accesorios. | ¿Cómo comprar? 4 pasos (registrarse, elegir, pagar, recibir) y la garantía de autenticidad. |
+| **Exterior** | Contacto: dirección, horarios y email. | QR a la tienda y plano del local con los QR de cada sector. | Isotipo, nombre, slogan y sello "Autenticidad verificada". |
+| **Interior** | ¿Quiénes somos?: misión, visión y valores. | Productos con precios y filtros para coleccionistas. | ¿Cómo comprar? en 4 pasos y garantía de autenticidad. |
 
-Archivo del tríptico: **[A COMPLETAR]** (`docs/marketing/triptico.pdf`).
+Pendiente: la **dirección** del local (10.2). Al completarla, se reemplaza `[Dirección del local]` en el HTML y se vuelve a exportar el PDF.
 
 ### 10.13 Códigos QR de los sectores
-Cada sector del local (y el tríptico) tiene un QR que lleva a la sección correspondiente del sitio:
+Cada sector del local (y el tríptico) tiene un QR que lleva a la sección correspondiente del sitio. Están en [`marketing/qr/`](marketing/qr/), en SVG (para imprimir en cualquier tamaño) y PNG, en morado oscuro `#1A0F2E` sobre blanco, con corrección de errores alta.
 
-| Sector | Destino del QR |
-|---|---|
-| Entrada / mostrador | `https://<dominio>/` (Home) |
-| Exhibidor de cartas sueltas | `https://<dominio>/catalogo?categoria=1` |
-| Exhibidor de sobres | `https://<dominio>/catalogo?categoria=2` |
-| Exhibidor de mazos | `https://<dominio>/catalogo?categoria=3` |
-| Accesorios | `https://<dominio>/catalogo?categoria=4` |
-| Caja / atención | `https://<dominio>/pedidos` (Mis pedidos) |
+| N.º | Sector | Destino | Archivo |
+|---|---|---|---|
+| 1 | Entrada | `https://pokecard.com.ar/` | `qr_1_entrada` |
+| 2 | Exhibidor de cartas sueltas | `https://pokecard.com.ar/catalogo?categoria=1` | `qr_2_cartas_sueltas` |
+| 3 | Exhibidor de sobres | `https://pokecard.com.ar/catalogo?categoria=2` | `qr_3_sobres` |
+| 4 | Exhibidor de mazos | `https://pokecard.com.ar/catalogo?categoria=3` | `qr_4_mazos` |
+| 5 | Accesorios | `https://pokecard.com.ar/catalogo?categoria=4` | `qr_5_accesorios` |
+| 6 | Caja / atención | `https://pokecard.com.ar/pedidos` (Mis pedidos) | `qr_6_caja_mis_pedidos` |
 
-Los QR se generan con cualquier generador gratuito, en morado oscuro `#1A0F2E` sobre blanco y con el isotipo en el centro. Imágenes de los QR: **[A COMPLETAR]** (`docs/marketing/qr/`), cuando el sitio tenga dominio público.
+<p>
+<img src="marketing/qr/qr_1_entrada.svg" width="110" alt="QR entrada">
+<img src="marketing/qr/qr_2_cartas_sueltas.svg" width="110" alt="QR cartas sueltas">
+<img src="marketing/qr/qr_3_sobres.svg" width="110" alt="QR sobres">
+<img src="marketing/qr/qr_4_mazos.svg" width="110" alt="QR mazos">
+<img src="marketing/qr/qr_5_accesorios.svg" width="110" alt="QR accesorios">
+<img src="marketing/qr/qr_6_caja_mis_pedidos.svg" width="110" alt="QR caja">
+</p>
+
+El catálogo ya lee el parámetro `?categoria=` y abre filtrado. `pokecard.com.ar` es el **dominio propuesto**: al momento de generar los QR no tenía registros DNS. Si el sitio se publica en otro dominio, los QR se regeneran con:
+
+```bash
+npx qrcode@1.5.4 -t svg -e H -d 1A0F2E -l FFFFFF -o qr_1_entrada.svg "https://<dominio>/"
+```
 
 ### 10.14 Maquetado físico — Sweet Home 3D
-Diseño del local en **Sweet Home 3D**, con estos sectores:
-- **Entrada** con cartelería del isologotipo y vidriera.
-- **Mostrador / caja** con el QR de atención.
-- **Exhibidores** de cartas sueltas (vitrinas con llave para cartas de alto valor), sobres, mazos y accesorios, cada uno con su QR.
-- **Mesa de juego** para torneos y eventos.
-- **Depósito** para el stock.
-- Paredes en morado oscuro con detalles en rojo y lavanda (paleta institucional).
 
-Archivos: **[A COMPLETAR]** (`docs/marketing/local_pokecard.sh3d` y capturas en 2D y 3D).
+![Plano del local](marketing/plano_local.svg)
+
+Plano de referencia del local (10 × 8 m) para armar el modelo en **Sweet Home 3D**. Los números negros marcan dónde va el QR de cada sector ([10.13](#1013-códigos-qr-de-los-sectores)).
+
+| Sector | Ubicación y medidas | Mobiliario sugerido (catálogo de Sweet Home 3D) |
+|---|---|---|
+| Entrada | Pared de abajo, puerta de 1 m al centro, vidrieras a los lados | Puerta, ventanas de vidriera, cartel con el isologotipo |
+| Cartas sueltas | Pared izquierda, exhibidor de 2,4 m | Estantería / vitrina |
+| Vitrina con llave | Centro arriba, 3,2 × 1 m | Vitrina de vidrio (cartas de alto valor) |
+| Sobres | Pared izquierda, 2 m | Estantería |
+| Mazos | Pared izquierda, 1,6 m | Estantería |
+| Mesa de juego | Centro, 2,8 × 1,6 m, 6 sillas | Mesa y sillas |
+| Accesorios | Pared derecha, 2,2 m | Estantería |
+| Mostrador / caja | Abajo a la derecha, en L | Mostrador, caja registradora, computadora |
+| Depósito | Arriba a la derecha, 3 × 3 m, con puerta | Estanterías metálicas, cajas |
+
+**Pasos en Sweet Home 3D:**
+1. *Plan → Crear paredes*: rectángulo de 1000 × 800 cm, con 250 cm de alto.
+2. Agregar las paredes del depósito (300 × 300 cm) y la puerta.
+3. *Plan → Crear habitaciones*: piso de madera en el salón y cerámico en el depósito.
+4. Colocar el mobiliario según la tabla.
+5. Pintar las paredes en morado oscuro `#1A0F2E` con un friso en rojo `#E22B3F`; el depósito en lavanda `#9B8FC0`.
+6. Importar como textura el isologotipo (cartel) y los QR (*Muebles → Importar textura*).
+7. Guardar como `docs/marketing/local_pokecard.sh3d` y exportar vistas 2D y 3D en `docs/marketing/local_2d.png` y `local_3d.png`.
+
+**[A COMPLETAR]:** el archivo `.sh3d` y sus capturas se tienen que hacer en el programa (no está instalado en la compu donde se armó esta documentación).
 
 ### 10.16 Integración del sector
 La identidad institucional no es una parte aparte: está aplicada en el sistema.
-- La **paleta** y la **tipografía** de [10.6](#106-círculo-cromático-y-paleta-institucional) son las variables CSS de `frontend/src/styles.css` y la fuente Sora cargada en `frontend/index.html`.
+- La **paleta** y la **tipografía** de [10.6](#106-círculo-cromático-y-paleta-institucional) son las variables CSS de `frontend/src/styles.css` y la fuente Sora cargada en `frontend/index.html`. El tríptico y las láminas usan las mismas variables.
 - El **isotipo** es el favicon y el logo del navbar (`frontend/public/logo.png`).
-- El **slogan** aparece en el título de la página y en el panel de login y registro.
-- Los **productos** de [10.7](#107-productos) son los del catálogo (`seed.js`).
-- Los **QR** de [10.13](#1013-códigos-qr-de-los-sectores) llevan a las rutas reales del sitio (`/catalogo`, `/pedidos`).
+- El **slogan** aparece en el título de la página, en el panel de login y registro, y en el tríptico.
+- Los **productos** de [10.7](#107-productos) son los del catálogo (`seed.js`) y los mismos del tríptico.
+- Los **QR** de [10.13](#1013-códigos-qr-de-los-sectores) llevan a las rutas reales del sitio (`/catalogo?categoria=`, `/pedidos`), y el plano del local indica dónde va cada uno.
+- El **comprobante** `PAY-xxxxxx` que genera la API es el mismo de la lámina de aplicaciones del logo.
 - El **tríptico**, el **merchandising** y el **local en Sweet Home 3D** usan la misma paleta, para que la experiencia sea igual en el local y en la web.
 - La prueba **F2** ([7.4](#74-pruebas-del-frontend)) verifica que el sitio respete esta identidad.

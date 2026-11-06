@@ -18,7 +18,7 @@
 | RF-12 | El admin puede gestionar categorías y proveedores (alta, edición, baja y listado, vía API). | Admin | Hecho (API) |
 | RF-13 | El panel administrativo (dashboard) muestra: total de productos, clientes, pedidos y ventas; valor del inventario; productos con stock bajo; productos por categoría y últimos usuarios registrados. | Admin | Hecho |
 | RF-14 | El cliente puede agregar productos al carrito y finalizar una compra. | Cliente | Hecho (pago simulado) |
-| RF-15 | El cliente puede consultar sus pedidos; el admin puede gestionar el estado de los pedidos. | Cliente / Admin | Parcial: el cliente consulta sus pedidos; falta la gestión de estados del admin |
+| RF-15 | El cliente puede consultar sus pedidos; el admin puede ver todos los pedidos, su detalle y gestionar su estado (pagado → enviado / cancelado). Al cancelar, se devuelve el stock. | Cliente / Admin | Hecho |
 
 ## Requerimientos no funcionales
 
@@ -33,7 +33,10 @@
 | RNF-07 | Integridad de datos | La base de datos valida claves foráneas, email único, precio y stock no negativos. |
 | RNF-08 | Usabilidad | La interfaz es adaptable a celular (diseño responsive) y respeta la identidad visual de PokeCard (paleta definida y tipografía Sora). |
 | RNF-09 | Rendimiento | Las consultas del catálogo responden en menos de 1 segundo con hasta 1.000 productos, usando un pool de conexiones a MySQL. |
-| RNF-10 | Mantenibilidad | El backend está separado en rutas, middleware y acceso a datos; hay tests automáticos del backend (Jest + Supertest). |
+| RNF-10 | Mantenibilidad | El backend está separado en rutas, middleware y acceso a datos; hay tests automáticos del backend (Jest + Supertest) y del frontend (Vitest). |
 | RNF-11 | Portabilidad | Funciona sobre Node.js 18 o superior y MySQL 8, en cualquier sistema operativo. |
 | RNF-12 | Compatibilidad | Compatible con las versiones actuales de Chrome, Firefox, Edge y Safari. |
-| RNF-13 | Confiabilidad | La API responde con códigos HTTP coherentes (400, 401, 403, 404, 409, 500) y mensajes de error claros. |
+| RNF-13 | Confiabilidad | La API responde con códigos HTTP coherentes (400, 401, 402, 403, 404, 409, 413, 429, 500) y mensajes de error claros, también ante un JSON mal formado. |
+| RNF-14 | Seguridad | El login se bloquea 15 minutos después de 5 intentos fallidos con el mismo email (protección contra fuerza bruta). |
+| RNF-15 | Seguridad | Los datos de la tarjeta se validan en el frontend y en el backend (Luhn, vencimiento y CVC); el número completo nunca se guarda. |
+| RNF-16 | Seguridad | En producción la API acepta peticiones solo del dominio configurado en `CORS_ORIGIN`. |

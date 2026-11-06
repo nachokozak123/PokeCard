@@ -12,6 +12,7 @@ import MisPedidos from './pages/MisPedidos';
 import AdminLayout from './pages/admin/AdminLayout';
 import Dashboard from './pages/admin/Dashboard';
 import AdminProductos from './pages/admin/AdminProductos';
+import AdminPedidos from './pages/admin/AdminPedidos';
 
 export default function App() {
   return (
@@ -32,6 +33,7 @@ export default function App() {
         <Route path="/admin" element={<RutaProtegida soloAdmin><AdminLayout /></RutaProtegida>}>
           <Route index element={<Dashboard />} />
           <Route path="productos" element={<AdminProductos />} />
+          <Route path="pedidos" element={<AdminPedidos />} />
         </Route>
 
         <Route path="*" element={<main className="contenedor"><h1>Página no encontrada</h1></main>} />

@@ -4,35 +4,7 @@ import { Card } from 'crd-ui/react';
 import 'crd-ui/styles.css';
 import { api, precio } from '../api';
 import { useCarrito } from '../CarritoContext';
-
-// ---------- Validaciones (las mismas reglas se vuelven a validar en el backend) ----------
-const luhn = (num) => {
-  const d = num.replace(/\D/g, '');
-  if (d.length < 13) return false;
-  let suma = 0;
-  [...d].reverse().forEach((c, i) => {
-    let n = Number(c);
-    if (i % 2 === 1) { n *= 2; if (n > 9) n -= 9; }
-    suma += n;
-  });
-  return suma % 10 === 0;
-};
-const vencimientoOk = (exp) => {
-  const m = exp.match(/^(\d{2})\/(\d{2})$/);
-  if (!m) return false;
-  const mes = Number(m[1]);
-  return mes >= 1 && mes <= 12;
-};
-
-const validar = (f) => {
-  const e = {};
-  const digitos = f.number.replace(/\D/g, '');
-  if (digitos.length < 13 || digitos.length > 19) e.number = 'El número de tarjeta no es válido.';
-  if (f.name.trim().length < 3) e.name = 'Ingresá el nombre como figura en la tarjeta.';
-  if (!vencimientoOk(f.expiry)) e.expiry = 'La fecha no es válida o la tarjeta está vencida.';
-  if (!/^\d{3,4}$/.test(f.cvc)) e.cvc = 'Debe tener 3 o 4 dígitos.';
-  return e;
-};
+import { validarTarjeta } from '../validaciones';
 
 export default function Checkout() {
   const { items, subtotal, vaciar } = useCarrito();
@@ -88,7 +60,7 @@ export default function Checkout() {
   async function pagar(e) {
     e.preventDefault();
     setError('');
-    const encontrados = validar(form);
+    const encontrados = validarTarjeta(form);
     setErrores(encontrados);
     if (Object.keys(encontrados).length) return;
 

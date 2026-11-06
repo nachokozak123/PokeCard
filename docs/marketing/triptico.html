@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>PokeCard | Tríptico</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Paleta institucional (igual a frontend/src/styles.css) */
+  :root {
+    --morado-oscuro: #1a0f2e; --morado: #7B5CB0; --rojo: #E22B3F; --negro: #0a0a0a;
+    --blanco: #F5F2FA; --lavanda: #9B8FC0; --tarjeta: #1c1628; --borde: #3d2f5c;
+  }
+  @page { size: A4 landscape; margin: 0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Sora', system-ui, sans-serif; color: var(--blanco); background: #444; }
+  .hoja {
+    width: 297mm; height: 210mm; display: grid; grid-template-columns: repeat(3, 1fr);
+    background: var(--negro); page-break-after: always; margin: 0 auto 10mm;
+  }
+  .hoja:last-child { page-break-after: auto; margin-bottom: 0; }
+  .cuerpo { padding: 12mm 10mm; border-right: 1px dashed var(--borde); display: flex; flex-direction: column; gap: 4mm; }
+  .cuerpo:last-child { border-right: 0; }
+  h1, h2, h3 { margin: 0; }
+  h2 { font-size: 15pt; border-bottom: 3px solid var(--rojo); padding-bottom: 2mm; }
+  h3 { font-size: 11pt; color: var(--lavanda); }
+  p, li { font-size: 9.5pt; line-height: 1.5; margin: 0; }
+  ul { margin: 0; padding-left: 5mm; }
+  .lavanda { color: var(--lavanda); }
+  .tapa { background: var(--morado-oscuro); align-items: center; justify-content: center; text-align: center; }
+  .tapa img { width: 62mm; border-radius: 50%; }
+  .tapa h1 { font-size: 32pt; }
+  .slogan { font-size: 12pt; color: var(--lavanda); }
+  .sello { margin-top: 6mm; background: var(--rojo); padding: 2.5mm 6mm; border-radius: 8px; font-weight: 700; font-size: 10pt; }
+  .caja { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 12px; padding: 4mm; }
+  .qr { display: flex; flex-direction: column; align-items: center; gap: 2mm; }
+  .qr img { width: 42mm; border-radius: 8px; }
+  .pasos { counter-reset: paso; list-style: none; padding: 0; display: grid; gap: 3mm; }
+  .pasos li { counter-increment: paso; display: grid; grid-template-columns: 9mm 1fr; gap: 2mm; align-items: center; }
+  .pasos li::before {
+    content: counter(paso); width: 9mm; height: 9mm; border-radius: 50%; background: var(--morado);
+    display: grid; place-items: center; font-weight: 700;
+  }
+  .producto { display: grid; grid-template-columns: 1fr auto; border-bottom: 1px solid var(--borde); padding: 2mm 0; font-size: 9.5pt; }
+  .producto b { color: var(--rojo); }
+  .plano { width: 100%; border-radius: 8px; background: var(--blanco); }
+  .pie { margin-top: auto; font-size: 8pt; color: var(--lavanda); }
+</style>
+</head>
+<body>
+
+<!-- CARA EXTERIOR: contacto | QR y ubicación | tapa -->
+<section class="hoja">
+  <div class="cuerpo">
+    <h2>Contacto</h2>
+    <div class="caja">
+      <h3>Dirección</h3>
+      <p>[Dirección del local]</p>
+    </div>
+    <div class="caja">
+      <h3>Horarios</h3>
+      <p>Lunes a viernes: 10 a 19 h<br>Sábados: 10 a 14 h<br>Tienda online: todos los días</p>
+    </div>
+    <div class="caja">
+      <h3>Escribinos</h3>
+      <p>contacto@pokecard.com.ar<br>pokecard.com.ar</p>
+    </div>
+    <p class="pie">Pagos seguros: nunca guardamos los datos de tu tarjeta.</p>
+  </div>
+
+  <div class="cuerpo">
+    <h2>Visitá la tienda</h2>
+    <div class="qr caja">
+      <img src="qr/qr_1_entrada.png" alt="QR a la tienda online">
+      <p>Escaneá y entrá al catálogo</p>
+    </div>
+    <h3>El local por dentro</h3>
+    <img class="plano" src="plano_local.svg" alt="Plano del local">
+    <p class="lavanda">Adentro del local cada sector tiene su QR para ver precios y stock al instante.</p>
+  </div>
+
+  <div class="cuerpo tapa">
+    <img src="../../frontend/public/logo.png" alt="">
+    <h1>PokeCard</h1>
+    <p class="slogan">Cartas únicas, compras seguras.</p>
+    <span class="sello">Autenticidad verificada</span>
+  </div>
+</section>
+
+<!-- CARA INTERIOR: quiénes somos | productos | cómo comprar -->
+<section class="hoja">
+  <div class="cuerpo">
+    <h2>¿Quiénes somos?</h2>
+    <p>PokeCard es una tienda de cartas coleccionables Pokémon pensada por y para coleccionistas.</p>
+    <div class="caja"><h3>Misión</h3><p>Que cualquier coleccionista consiga la carta que busca con la tranquilidad de una compra segura.</p></div>
+    <div class="caja"><h3>Visión</h3><p>Ser la tienda de referencia en cartas Pokémon del país.</p></div>
+    <div class="caja"><h3>Nuestros valores</h3><p>Confianza · Transparencia · Pasión por el coleccionismo · Atención cercana</p></div>
+  </div>
+
+  <div class="cuerpo">
+    <h2>Productos</h2>
+    <div class="producto"><span>Cartas sueltas holográficas</span><b>desde $2.800</b></div>
+    <div class="producto"><span>Sobres Booster sellados</span><b>$3.200</b></div>
+    <div class="producto"><span>Mazos iniciales de 60 cartas</span><b>$15.000</b></div>
+    <div class="producto"><span>Fundas protectoras x50</span><b>$2.500</b></div>
+    <h3>Buscá como un coleccionista</h3>
+    <ul>
+      <li>Filtros por colección (Base Set y más).</li>
+      <li>Filtros por rareza: Común, Rara Holo…</li>
+      <li>Stock real, actualizado en cada compra.</li>
+    </ul>
+  </div>
+
+  <div class="cuerpo">
+    <h2>¿Cómo comprar?</h2>
+    <ol class="pasos">
+      <li><p><b>Registrate</b> en pokecard.com.ar con tu email.</p></li>
+      <li><p><b>Elegí</b> tus cartas en el catálogo y sumalas al carrito.</p></li>
+      <li><p><b>Pagá</b> con tarjeta de forma segura.</p></li>
+      <li><p><b>Seguí</b> tu compra desde "Mis pedidos".</p></li>
+    </ol>
+    <div class="caja">
+      <h3>Garantía PokeCard</h3>
+      <p>Cada carta se revisa antes de venderse. Si no es auténtica, te devolvemos el dinero.</p>
+    </div>
+    <p class="pie">Pokémon y sus personajes son marcas de sus respectivos dueños.</p>
+  </div>
+</section>
+
+</body>
+</html>
