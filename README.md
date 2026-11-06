@@ -16,6 +16,7 @@ Tienda online de cartas coleccionables Pokémon. *"Cartas únicas, compras segur
 | Diagrama Entidad-Relación | `docs/DER_PokeCard.png` |
 | Diagrama de base de datos | `docs/Diagrama_BD_PokeCard.png` y `database/schema.sql` |
 | Requerimientos funcionales y no funcionales | `docs/Requerimientos.md` |
+| Documentación técnica e identidad institucional (secciones 1 a 10) | `docs/Documentacion_Tecnica.md` |
 | Tests de backend | `backend/tests/` (17 tests) |
 | Mockups | `docs/mockups/` |
 
