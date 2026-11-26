@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>PokeCard | Identidad visual</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Paleta institucional (igual a frontend/src/styles.css) */
+  :root {
+    --morado-oscuro: #1a0f2e; --morado: #7B5CB0; --rojo: #E22B3F; --negro: #0a0a0a;
+    --blanco: #F5F2FA; --lavanda: #9B8FC0; --tarjeta: #1c1628; --borde: #3d2f5c;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Sora', system-ui, sans-serif; background: var(--negro); color: var(--blanco); }
+  .lamina { width: 1200px; padding: 48px; }
+  .lamina + .lamina { border-top: 2px dashed var(--borde); }
+  h1 { margin: 0 0 6px; font-size: 34px; }
+  .sub { color: var(--lavanda); margin: 0 0 32px; }
+  .grilla { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .pieza { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+  .pieza h3 { margin: 0; font-size: 15px; color: var(--lavanda); }
+  .escena { height: 220px; border-radius: 10px; display: grid; place-items: center; background: #2a2238; position: relative; overflow: hidden; }
+  .iso { border-radius: 50%; display: block; }
+  .isologo { display: flex; align-items: center; gap: 12px; font-weight: 700; }
+
+  /* Pestaña del navegador */
+  .navegador { width: 90%; background: #e9e6f0; border-radius: 8px; overflow: hidden; color: #222; font-size: 12px; }
+  .navegador .pest { display: flex; align-items: center; gap: 8px; background: #fff; width: 75%; padding: 8px 10px; border-radius: 8px 8px 0 0; margin: 8px 0 0 8px; }
+  .navegador .barra { background: var(--morado-oscuro); color: var(--blanco); padding: 12px; }
+  /* Perfil */
+  .perfil { text-align: center; }
+  .perfil .iso { margin: 0 auto 8px; border: 4px solid var(--rojo); }
+  /* Cartel */
+  .cartel { background: var(--morado-oscuro); padding: 18px 28px; border-radius: 10px; border: 3px solid var(--rojo); font-size: 30px; }
+  /* Tarjeta de agradecimiento */
+  .gracias { width: 250px; height: 150px; background: var(--blanco); color: var(--morado-oscuro); border-radius: 10px; padding: 14px; display: grid; grid-template-columns: 1fr 70px; gap: 8px; align-items: center; }
+  .gracias p { margin: 4px 0 0; font-size: 11px; }
+  /* Bolsa */
+  .bolsa { width: 150px; height: 180px; background: var(--morado-oscuro); border-radius: 6px 6px 14px 14px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; font-size: 11px; color: var(--lavanda); }
+  .bolsa::before { content: ''; position: absolute; top: -28px; width: 70px; height: 50px; border: 6px solid var(--morado); border-bottom: 0; border-radius: 40px 40px 0 0; }
+  .bolsa b { color: var(--blanco); font-size: 18px; }
+  /* Comprobante */
+  .recibo { width: 210px; background: var(--blanco); color: #222; padding: 14px; border-radius: 6px; font-size: 11px; }
+  .recibo .isologo { color: var(--morado-oscuro); margin-bottom: 8px; }
+  .recibo .fila { display: flex; justify-content: space-between; border-top: 1px dashed #bbb; padding: 4px 0; }
+
+  /* Merchandising */
+  .remera { width: 170px; height: 180px; background: #111; clip-path: polygon(25% 0, 40% 6%, 60% 6%, 75% 0, 100% 18%, 88% 34%, 80% 30%, 80% 100%, 20% 100%, 20% 30%, 12% 34%, 0 18%); display: grid; place-items: center; }
+  .playmat { width: 300px; height: 170px; background: radial-gradient(circle at 70% 50%, var(--morado) 0, var(--morado-oscuro) 65%); border-radius: 14px; display: flex; align-items: center; justify-content: space-between; padding: 0 22px; }
+  .zonas { display: grid; grid-template-columns: repeat(3, 34px); gap: 6px; }
+  .zonas span { height: 46px; border: 2px dashed var(--lavanda); border-radius: 4px; }
+  .deckbox { width: 110px; height: 160px; background: var(--negro); border: 2px solid var(--borde); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; box-shadow: 14px 0 0 #1f1f1f; }
+  .deckbox .iso { box-shadow: 0 0 0 4px var(--rojo); }
+  .sticker { width: 120px; height: 120px; border-radius: 50%; background: var(--blanco); display: grid; place-items: center; box-shadow: 0 6px 14px rgba(0,0,0,.5); }
+  .funda { width: 96px; height: 134px; border-radius: 6px; background: var(--morado); display: grid; place-items: center; position: absolute; }
+  .packaging { width: 220px; height: 130px; background: var(--morado-oscuro); border-radius: 6px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px; border: 2px solid var(--borde); font-size: 12px; color: var(--lavanda); }
+  .prohibido { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 28px; }
+  .prohibido div { display: flex; flex-direction: column; align-items: center; background: #2a2238; border-radius: 10px; padding: 14px; text-align: center; font-size: 12px; color: var(--lavanda); }
+  .prohibido .x { color: var(--rojo); font-weight: 700; display: block; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<section class="lamina" id="aplicaciones">
+  <h1>Aplicaciones del logo</h1>
+  <p class="sub">Isotipo, logotipo (Sora Bold) e isologotipo aplicados en distintos soportes.</p>
+  <div class="grilla">
+    <div class="pieza"><h3>Favicon y navbar del sitio</h3>
+      <div class="escena"><div class="navegador">
+        <div class="pest"><img class="iso" src="../../frontend/public/logo.png" width="16" alt="">PokeCard | Cartas únicas…</div>
+        <div class="barra isologo"><img class="iso" src="../../frontend/public/logo.png" width="32" alt="">PokeCard</div>
+      </div></div></div>
+    <div class="pieza"><h3>Perfil de redes sociales</h3>
+      <div class="escena"><div class="perfil"><img class="iso" src="../../frontend/public/logo.png" width="110" alt=""><b>@pokecard</b><br><small style="color:var(--lavanda)">Cartas únicas, compras seguras.</small></div></div></div>
+    <div class="pieza"><h3>Cartelería del local</h3>
+      <div class="escena" style="background:#3a3346"><div class="cartel isologo"><img class="iso" src="../../frontend/public/logo.png" width="64" alt="">PokeCard</div></div></div>
+    <div class="pieza"><h3>Tarjeta de agradecimiento</h3>
+      <div class="escena"><div class="gracias">
+        <div><div class="isologo" style="font-size:15px"><img class="iso" src="../../frontend/public/logo.png" width="28" alt="">PokeCard</div><p><b>¡Gracias por tu compra!</b><br>Escaneá y seguí tu pedido.</p></div>
+        <img src="qr/qr_6_caja_mis_pedidos.png" width="70" alt="">
+      </div></div></div>
+    <div class="pieza"><h3>Bolsa / packaging</h3>
+      <div class="escena"><div class="bolsa"><img class="iso" src="../../frontend/public/logo.png" width="60" alt=""><b>PokeCard</b>Cartas únicas,<br>compras seguras.</div></div></div>
+    <div class="pieza"><h3>Comprobante de pago</h3>
+      <div class="escena"><div class="recibo">
+        <div class="isologo"><img class="iso" src="../../frontend/public/logo.png" width="24" alt="">PokeCard</div>
+        <div class="fila"><span>Comprobante</span><b>PAY-000001</b></div>
+        <div class="fila"><span>Tarjeta</span><span>•••• 1111</span></div>
+        <div class="fila"><span>Total</span><b style="color:var(--rojo)">$7.700</b></div>
+      </div></div></div>
+  </div>
+  <div class="prohibido">
+    <div><img class="iso" src="../../frontend/public/logo.png" width="60" height="40" style="border-radius:50%" alt=""><span class="x">✕ No deformar</span></div>
+    <div><img class="iso" src="../../frontend/public/logo.png" width="50" style="filter:hue-rotate(140deg)" alt=""><span class="x">✕ No cambiar colores</span></div>
+    <div><img class="iso" src="../../frontend/public/logo.png" width="50" style="transform:rotate(25deg)" alt=""><span class="x">✕ No rotar</span></div>
+    <div style="background:#9B8FC0"><img class="iso" src="../../frontend/public/logo.png" width="50" style="filter:drop-shadow(6px 6px 2px #000)" alt=""><span class="x" style="color:#1a0f2e">✕ Sin sombras ni fondos sin contraste</span></div>
+  </div>
+</section>
+
+<section class="lamina" id="merchandising">
+  <h1>Merchandising</h1>
+  <p class="sub">Productos promocionales con la identidad de PokeCard.</p>
+  <div class="grilla">
+    <div class="pieza"><h3>Remera del personal y eventos</h3>
+      <div class="escena"><div class="remera"><div class="isologo" style="flex-direction:column;gap:4px;font-size:13px;margin-top:-10px"><img class="iso" src="../../frontend/public/logo.png" width="40" alt="">PokeCard</div></div></div></div>
+    <div class="pieza"><h3>Playmat (alfombra de juego)</h3>
+      <div class="escena"><div class="playmat"><div class="zonas"><span></span><span></span><span></span><span></span><span></span><span></span></div><div class="isologo" style="flex-direction:column;gap:6px"><img class="iso" src="../../frontend/public/logo.png" width="60" alt="">PokeCard</div></div></div></div>
+    <div class="pieza"><h3>Caja de mazo (deck box)</h3>
+      <div class="escena"><div class="deckbox"><img class="iso" src="../../frontend/public/logo.png" width="56" alt=""><b style="font-size:13px">PokeCard</b></div></div></div>
+    <div class="pieza"><h3>Stickers para los paquetes</h3>
+      <div class="escena"><div class="sticker"><img class="iso" src="../../frontend/public/logo.png" width="100" alt=""></div></div></div>
+    <div class="pieza"><h3>Fundas protectoras</h3>
+      <div class="escena">
+        <div class="funda" style="transform:translateX(-40px) rotate(-10deg)"><img class="iso" src="../../frontend/public/logo.png" width="50" alt=""></div>
+        <div class="funda" style="background:var(--morado-oscuro);border:2px solid var(--borde)"><img class="iso" src="../../frontend/public/logo.png" width="50" alt=""></div>
+        <div class="funda" style="background:var(--rojo);transform:translateX(40px) rotate(10deg)"><img class="iso" src="../../frontend/public/logo.png" width="50" alt=""></div>
+      </div></div>
+    <div class="pieza"><h3>Caja de envío</h3>
+      <div class="escena"><div class="packaging"><div class="isologo" style="color:var(--blanco);font-size:20px"><img class="iso" src="../../frontend/public/logo.png" width="40" alt="">PokeCard</div>Cartas únicas, compras seguras.</div></div></div>
+  </div>
+</section>
+
+</body>
+</html>

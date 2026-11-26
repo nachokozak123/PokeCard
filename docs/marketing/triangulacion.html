@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>PokeCard | Triangulación</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root { --morado-oscuro: #1a0f2e; --morado: #7B5CB0; --rojo: #E22B3F; --blanco: #F5F2FA; --lavanda: #9B8FC0; }
+  body { margin: 0; font-family: 'Sora', system-ui, sans-serif; background: var(--morado-oscuro); color: var(--blanco); }
+  header { padding: 14px 20px; display: flex; justify-content: space-between; align-items: baseline; }
+  header h1 { margin: 0; font-size: 20px; }
+  header span { color: var(--lavanda); font-size: 13px; }
+  #mapa { width: 1000px; height: 620px; }
+  .etiqueta { background: var(--morado-oscuro); color: var(--blanco); border: 2px solid var(--morado); border-radius: 8px; padding: 4px 8px; font: 700 12px 'Sora', sans-serif; white-space: nowrap; }
+  .etiqueta.local { border-color: var(--rojo); }
+</style>
+</head>
+<body>
+<header><h1>PokeCard — Anacleto Rojas 60, Monte Grande</h1><span>Triangulación de transporte (dirección ficticia)</span></header>
+<div id="mapa"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+  // Coordenadas de OpenStreetMap
+  const local = [-34.81693, -58.46885];
+  const vertices = [
+    { pos: [-34.81448, -58.46968], texto: 'A · Tren Roca: Estación Monte Grande (283 m)' },
+    { pos: [-34.82005, -58.46588], texto: 'B · Colectivos 51, 394 y 501: parada Plaza Mitre (440 m)' },
+    { pos: [-34.81626, -58.47098], texto: 'C · Av. Dardo Rocha (208 m)' },
+  ];
+  const mapa = L.map('mapa', { zoomControl: false }).fitBounds(vertices.map((v) => v.pos), { padding: [90, 90] });
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors',
+  }).addTo(mapa);
+
+  L.polygon(vertices.map((v) => v.pos), { color: '#E22B3F', weight: 4, fillColor: '#7B5CB0', fillOpacity: 0.18 }).addTo(mapa);
+  vertices.forEach((v) => {
+    L.polyline([local, v.pos], { color: '#1a0f2e', weight: 2, dashArray: '6 6' }).addTo(mapa);
+    L.circleMarker(v.pos, { radius: 9, color: '#fff', weight: 3, fillColor: '#7B5CB0', fillOpacity: 1 }).addTo(mapa)
+      .bindTooltip(v.texto, { permanent: true, direction: 'top', className: 'etiqueta', offset: [0, -8] });
+  });
+  L.circleMarker(local, { radius: 12, color: '#fff', weight: 3, fillColor: '#E22B3F', fillOpacity: 1 }).addTo(mapa)
+    .bindTooltip('PokeCard', { permanent: true, direction: 'right', className: 'etiqueta local', offset: [12, 0] });
+</script>
+</body>
+</html>
