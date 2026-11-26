@@ -30,10 +30,13 @@ export default function Registro() {
       <div className="auth-form-wrap">
         <form className="auth-form" onSubmit={enviar}>
           <h1>Crear cuenta</h1>
-          <label>Nombre<input value={form.nombre} onChange={cambiar('nombre')} required /></label>
-          <label>Email<input type="email" value={form.email} onChange={cambiar('email')} required /></label>
-          <label>Contraseña<input type="password" minLength={6} value={form.password} onChange={cambiar('password')} required /></label>
-          {error && <p className="error">{error}</p>}
+          <label>Nombre<input autoComplete="name" maxLength={100} value={form.nombre} onChange={cambiar('nombre')} required /></label>
+          <label>Email<input type="email" autoComplete="email" value={form.email} onChange={cambiar('email')} required /></label>
+          <label>Contraseña
+            <input type="password" minLength={8} maxLength={72} autoComplete="new-password" value={form.password} onChange={cambiar('password')} required aria-describedby="ayuda-pass" />
+            <small id="ayuda-pass" className="ayuda">Mínimo 8 caracteres, con letras y números.</small>
+          </label>
+          {error && <p className="error" role="alert">{error}</p>}
           <button className="btn btn-rojo btn-grande btn-block">Registrarme</button>
           <p className="auth-alt">¿Ya tenés cuenta? <Link to="/login">Ingresá</Link></p>
         </form>

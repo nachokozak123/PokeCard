@@ -22,7 +22,7 @@ export default function MisPedidos() {
                 <tr key={p.id}>
                   <td>#{p.id}</td>
                   <td>{new Date(p.fecha).toLocaleDateString('es-AR')}</td>
-                  <td>{p.estado}</td>
+                  <td><span className={`estado estado-${p.estado}`}>{p.estado}</span></td>
                   <td>{precio(p.total)}</td>
                 </tr>
               ))}

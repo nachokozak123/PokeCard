@@ -12,10 +12,14 @@ beforeEach(() => db.query.mockReset());
 
 describe('Productos (lectura pública)', () => {
   test('GET /productos devuelve la lista', async () => {
-    db.query.mockResolvedValueOnce([[{ id: 1, nombre: 'Carta Holo Fuego' }, { id: 2, nombre: 'Carta Holo Agua' }]]);
+    db.query
+      .mockResolvedValueOnce([[{ total: 2 }]])  // COUNT para la paginación
+      .mockResolvedValueOnce([[{ id: 1, nombre: 'Carta Holo Fuego' }, { id: 2, nombre: 'Carta Holo Agua' }]]);
     const res = await request(app).get('/productos');
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(2);
+    expect(res.headers['x-total-count']).toBe('2');
+    expect(db.query.mock.calls[1][0]).toMatch(/WHERE p\.activo/); // lo desactivado no se muestra
   });
 
   test('GET /productos/:id inexistente devuelve 404', async () => {
@@ -25,11 +29,45 @@ describe('Productos (lectura pública)', () => {
   });
 
   test('el orden solo acepta valores permitidos (evita inyección SQL)', async () => {
-    db.query.mockResolvedValueOnce([[]]);
+    db.query.mockResolvedValueOnce([[{ total: 0 }]]).mockResolvedValueOnce([[]]);
     await request(app).get('/productos').query({ orden: 'precio; DROP TABLE producto' });
-    const sql = db.query.mock.calls[0][0];
+    const sql = db.query.mock.calls[1][0];
     expect(sql).not.toMatch(/DROP/i);
     expect(sql).toMatch(/ORDER BY p\.id DESC/);
+  });
+});
+
+describe('Productos (búsqueda y paginación seguras)', () => {
+  beforeEach(() => db.query.mockResolvedValueOnce([[{ total: 0 }]]).mockResolvedValueOnce([[]]));
+
+  test('la búsqueda va como parámetro y escapa los comodines % y _', async () => {
+    await request(app).get('/productos').query({ q: "100%_' OR 1=1 --" });
+    const [sql, params] = db.query.mock.calls[1];
+    expect(sql).not.toContain('OR 1=1');
+    expect(sql).toMatch(/ILIKE/);
+    expect(params[0]).toBe("%100\\%\\_' OR 1=1 --%");
+  });
+
+  test('limite y pagina se convierten en números acotados (máximo 100)', async () => {
+    await request(app).get('/productos').query({ limite: '999999; DROP TABLE x', pagina: '-4' });
+    const sql = db.query.mock.calls[1][0];
+    expect(sql).toMatch(/LIMIT 100 OFFSET 0$/);
+    expect(sql).not.toMatch(/DROP/);
+  });
+
+  test('categoria con basura se ignora en vez de romper la consulta', async () => {
+    await request(app).get('/productos').query({ categoria: "abc,1;--,-3" });
+    const [sql, params] = db.query.mock.calls[1];
+    expect(sql).not.toMatch(/categoria_id IN/);
+    expect(params).toEqual([]);
+  });
+});
+
+describe('Productos (ids)', () => {
+  test('GET /productos/abc devuelve 404 sin consultar la base', async () => {
+    const res = await request(app).get('/productos/abc');
+    expect(res.status).toBe(404);
+    expect(db.query).not.toHaveBeenCalled();
   });
 });
 

@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('../db');
-const { verificarToken, soloAdmin } = require('../middleware/auth');
+const { verificarToken, soloAdmin, idValido, limitar } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -35,6 +35,21 @@ function validarTarjeta(t = {}) {
   return null;
 }
 
+// Datos de envío: se guardan en el pedido para tener la dirección tal como estaba al comprar
+function validarEnvio(e) {
+  if (!e || typeof e !== 'object') return 'Los datos de envío son obligatorios';
+  const texto = (v, min, max) => typeof v === 'string' && v.trim().length >= min && v.trim().length <= max;
+  if (!texto(e.nombre, 3, 100)) return 'Ingresá el nombre de quien recibe el pedido';
+  if (!texto(e.direccion, 5, 200)) return 'Ingresá la dirección de entrega (calle y número)';
+  if (!texto(e.ciudad, 2, 100)) return 'Ingresá la ciudad';
+  if (!texto(e.provincia, 2, 100)) return 'Ingresá la provincia';
+  if (!/^[A-Za-z0-9 -]{4,10}$/.test(String(e.cp || ''))) return 'El código postal no es válido';
+  if (!/^[\d+() -]{6,30}$/.test(String(e.telefono || ''))) return 'El teléfono no es válido';
+  return null;
+}
+
+const limiteCompra = limitar({ minutos: 15, max: 20, mensaje: 'Demasiados intentos de pago. Probá de nuevo en unos minutos.' });
+
 const rechazada = (t) => String(t.numero).replace(/\D/g, '').endsWith('0002');
 
 // Cambios de estado permitidos para el admin
@@ -45,78 +60,64 @@ const TRANSICIONES = {
   cancelado: [],
 };
 
-// POST /pedidos  -> cliente autenticado. Body: { items: [{ producto_id, cantidad }], tarjeta: {...} }
-router.post('/', verificarToken, async (req, res) => {
-  const { items, tarjeta } = req.body;
+// POST /pedidos  -> cliente autenticado.
+// Body: { items: [{ producto_id, cantidad }], tarjeta: {...}, envio: {...} }
+router.post('/', verificarToken, limiteCompra, async (req, res) => {
+  const { items, tarjeta, envio } = req.body;
   if (!Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: 'El carrito está vacío' });
   }
+  if (items.length > 50) return res.status(400).json({ error: 'El carrito tiene demasiados productos' });
   for (const it of items) {
-    if (!Number.isInteger(it.producto_id) || !Number.isInteger(it.cantidad) || it.cantidad < 1) {
+    if (!it || !Number.isInteger(it.producto_id) || !Number.isInteger(it.cantidad) || it.cantidad < 1 || it.cantidad > 100) {
       return res.status(400).json({ error: 'Los productos del carrito no son válidos' });
     }
   }
+  const errorEnvio = validarEnvio(envio);
+  if (errorEnvio) return res.status(400).json({ error: errorEnvio });
   const errorTarjeta = validarTarjeta(tarjeta);
   if (errorTarjeta) return res.status(400).json({ error: errorTarjeta });
 
-  // Si el mismo producto viene repetido, se suman las cantidades
-  const cantidades = new Map();
-  for (const it of items) cantidades.set(it.producto_id, (cantidades.get(it.producto_id) || 0) + it.cantidad);
+  // Simulación de la pasarela de pago (antes de tocar la base: si el banco rechaza, no se bloquea nada)
+  if (rechazada(tarjeta)) {
+    return res.status(402).json({ error: 'El banco rechazó la tarjeta. Probá con otra.' });
+  }
 
-  const conn = await db.getConnection();
+  const last4 = String(tarjeta.numero).replace(/\D/g, '').slice(-4);
+  const datosEnvio = Object.fromEntries(
+    ['nombre', 'direccion', 'ciudad', 'provincia', 'cp', 'telefono'].map((k) => [k, String(envio[k]).trim()])
+  );
+
   try {
-    await conn.beginTransaction();
-
-    // Los precios y el stock se leen de la base (nunca se confía en el precio del cliente)
-    let total = 0;
-    const lineas = [];
-    for (const [productoId, cantidad] of cantidades) {
-      const [rows] = await conn.query(
-        'SELECT id, nombre, precio, stock FROM producto WHERE id = ? FOR UPDATE',
-        [productoId]
-      );
-      const p = rows[0];
-      if (!p) { await conn.rollback(); return res.status(404).json({ error: 'Un producto del carrito ya no existe' }); }
-      if (p.stock < cantidad) {
-        await conn.rollback();
-        return res.status(409).json({ error: `Stock insuficiente para "${p.nombre}" (quedan ${p.stock})` });
-      }
-      total += Number(p.precio) * cantidad;
-      lineas.push({ p, cantidad });
-    }
-
-    // Simulación de la pasarela de pago
-    if (rechazada(tarjeta)) {
-      await conn.rollback();
-      return res.status(402).json({ error: 'El banco rechazó la tarjeta. Probá con otra.' });
-    }
-
-    const [r] = await conn.query(
-      'INSERT INTO pedido (usuario_id, estado, total) VALUES (?, ?, ?)',
-      [req.usuario.id, 'pagado', total]
+    // crear_pedido() (ver database/supabase/schema.sql) hace todo en UNA transacción:
+    // bloquea los productos, toma precio y stock de la base (nunca del cliente), valida y descuenta.
+    const [rows] = await db.query(
+      'SELECT * FROM crear_pedido(?, ?::jsonb, ?::jsonb, ?)',
+      [req.usuario.id, JSON.stringify(items), JSON.stringify(datosEnvio), last4]
     );
-    for (const { p, cantidad } of lineas) {
-      await conn.query(
-        'INSERT INTO detalle_pedido (pedido_id, producto_id, cantidad, precio_unitario) VALUES (?, ?, ?, ?)',
-        [r.insertId, p.id, cantidad, p.precio]
-      );
-      await conn.query('UPDATE producto SET stock = stock - ? WHERE id = ?', [cantidad, p.id]);
-    }
-    await conn.commit();
-
+    const p = rows[0];
     res.status(201).json({
-      id: r.insertId,
+      id: p.pedido_id,
       estado: 'pagado',
-      total,
-      comprobante: 'PAY-' + String(r.insertId).padStart(6, '0'),
-      tarjeta_last4: String(tarjeta.numero).replace(/\D/g, '').slice(-4),
+      total: Number(p.total),
+      comprobante: p.comprobante,
+      tarjeta_last4: last4,
     });
   } catch (e) {
-    await conn.rollback().catch(() => {});
+    const msg = String(e.message || '');
+    if (msg.includes('PRODUCTO_INEXISTENTE')) return res.status(404).json({ error: 'Un producto del carrito ya no existe' });
+    if (msg.includes('STOCK_INSUFICIENTE')) {
+      const detalle = msg.slice(msg.indexOf('STOCK_INSUFICIENTE:') + 'STOCK_INSUFICIENTE:'.length);
+      const corte = detalle.lastIndexOf(':'); // el nombre del producto podría tener ":"
+      const nombre = detalle.slice(0, corte);
+      const stock = detalle.slice(corte + 1);
+      return res.status(409).json({ error: `Stock insuficiente para "${nombre}" (quedan ${stock})` });
+    }
+    if (msg.includes('CARRITO_VACIO') || msg.includes('ITEMS_INVALIDOS')) {
+      return res.status(400).json({ error: 'Los productos del carrito no son válidos' });
+    }
     console.error(e);
     res.status(500).json({ error: 'Error del servidor' });
-  } finally {
-    conn.release();
   }
 });
 
@@ -153,9 +154,11 @@ router.get('/', verificarToken, soloAdmin, async (req, res) => {
 });
 
 // GET /pedidos/:id  -> detalle de un pedido (su dueño o un admin)
-router.get('/:id', verificarToken, async (req, res) => {
+router.get('/:id', verificarToken, idValido, async (req, res) => {
   try {
-    const [rows] = await db.query('SELECT id, usuario_id, fecha, estado, total FROM pedido WHERE id = ?', [req.params.id]);
+    const [rows] = await db.query(`SELECT id, usuario_id, fecha, estado, total, comprobante, tarjeta_last4,
+              envio_nombre, envio_direccion, envio_ciudad, envio_provincia, envio_cp, envio_telefono
+       FROM pedido WHERE id = ?`, [req.params.id]);
     const pedido = rows[0];
     // Si no es suyo se responde 404, para no revelar que el pedido existe
     if (!pedido || (req.usuario.rol !== 'admin' && pedido.usuario_id !== req.usuario.id)) {
@@ -167,7 +170,8 @@ router.get('/:id', verificarToken, async (req, res) => {
        WHERE d.pedido_id = ?`,
       [pedido.id]
     );
-    res.json({ ...pedido, items });
+    const { usuario_id, ...publico } = pedido; // no hace falta exponer el id interno del usuario
+    res.json({ ...publico, items });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Error del servidor' });
@@ -175,7 +179,7 @@ router.get('/:id', verificarToken, async (req, res) => {
 });
 
 // PATCH /pedidos/:id/estado  -> el admin cambia el estado. Si se cancela, se devuelve el stock.
-router.patch('/:id/estado', verificarToken, soloAdmin, async (req, res) => {
+router.patch('/:id/estado', verificarToken, soloAdmin, idValido, async (req, res) => {
   const { estado } = req.body;
   if (!TRANSICIONES[estado]) return res.status(400).json({ error: 'El estado no es válido' });
 
@@ -191,13 +195,11 @@ router.patch('/:id/estado', verificarToken, soloAdmin, async (req, res) => {
     }
 
     if (estado === 'cancelado') {
-      await conn.query(
-        `UPDATE producto p JOIN detalle_pedido d ON d.producto_id = p.id
-         SET p.stock = p.stock + d.cantidad WHERE d.pedido_id = ?`,
-        [pedido.id]
-      );
+      // cancelar_pedido() devuelve el stock y marca el pedido como cancelado
+      await conn.query('SELECT cancelar_pedido(?)', [pedido.id]);
+    } else {
+      await conn.query('UPDATE pedido SET estado = ? WHERE id = ?', [estado, pedido.id]);
     }
-    await conn.query('UPDATE pedido SET estado = ? WHERE id = ?', [estado, pedido.id]);
     await conn.commit();
     res.json({ id: pedido.id, estado });
   } catch (e) {

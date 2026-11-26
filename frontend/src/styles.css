@@ -443,3 +443,79 @@ td {
   .detalle-img { min-height: 260px; }
   .carrito-item { grid-template-columns: 70px 1fr; }
 }
+/* =====================================================================
+   Mejoras (usan solo la paleta institucional: ver docs/Documentacion_Tecnica.md 10.6)
+   ===================================================================== */
+:root { --exito: #3ecf6a; }
+html { scroll-behavior: smooth; }
+body { min-height: 100vh; display: flex; flex-direction: column; }
+#root { display: flex; flex-direction: column; min-height: 100vh; }
+#contenido { flex: 1; outline: none; }
+
+/* Accesibilidad: foco visible, "saltar al contenido" y menos movimiento si el usuario lo pide */
+:focus-visible { outline: 3px solid var(--lavanda); outline-offset: 2px; border-radius: 4px; }
+.saltar {
+  position: absolute; left: .5rem; top: -4rem; z-index: 100;
+  background: var(--rojo); color: #fff; padding: .6rem 1rem; border-radius: 8px; font-weight: 700; text-decoration: none;
+}
+.saltar:focus { top: .5rem; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+.ayuda { color: var(--lavanda); font-weight: 400; }
+input[aria-invalid="true"] { border-color: var(--rojo); }
+
+/* Home */
+.hero-acciones { display: flex; gap: .8rem; flex-wrap: wrap; }
+.franja-confianza { background: var(--tarjeta); border-top: 1px solid var(--borde); border-bottom: 1px solid var(--borde); }
+.franja-interior { display: flex; justify-content: space-around; gap: 1rem 2rem; flex-wrap: wrap; padding-top: .9rem; padding-bottom: .9rem; font-size: .9rem; font-weight: 600; color: var(--lavanda); }
+.seccion-cabecera { display: flex; justify-content: space-between; align-items: baseline; margin-top: .5rem; }
+.seccion-titulo { margin-top: 2rem; }
+
+/* Tarjeta de producto */
+.producto-img { position: relative; display: flex; align-items: center; justify-content: center; text-decoration: none; color: var(--lavanda); }
+.producto-acciones { display: flex; gap: .4rem; }
+.badge {
+  position: absolute; top: .6rem; left: .6rem; z-index: 1;
+  padding: .2rem .6rem; border-radius: 999px; font-size: .75rem; font-weight: 700; color: #fff;
+}
+.detalle .badge { position: static; display: inline-block; margin-bottom: .6rem; }
+.badge-ultimas { background: var(--rojo); }
+.badge-agotado { background: var(--borde); color: var(--blanco); }
+
+/* Catálogo */
+.buscador { margin-bottom: 1.2rem; }
+.buscador input { width: 100%; }
+.cargando { opacity: .5; transition: opacity .2s; }
+.vacio { text-align: center; padding: 2.5rem 1rem; color: var(--lavanda); }
+.vacio h1 { color: var(--blanco); }
+
+/* Estado de pedidos */
+.estado { display: inline-block; padding: .15rem .65rem; border-radius: 999px; font-size: .8rem; font-weight: 700; text-transform: capitalize; border: 1px solid var(--borde); }
+.estado-pagado { color: var(--exito); border-color: var(--exito); }
+.estado-enviado { color: var(--blanco); background: var(--morado); border-color: var(--morado); }
+.estado-cancelado { color: var(--rojo); border-color: var(--rojo); }
+.estado-pendiente { color: var(--lavanda); }
+
+/* Checkout */
+.checkout-form h2 { font-size: 1.15rem; margin: .4rem 0 0; }
+.aviso.seguro { color: var(--blanco); }
+
+/* Footer */
+.footer { background: var(--morado-oscuro); border-top: 1px solid var(--borde); margin-top: 2rem; }
+.footer-interior { display: grid; grid-template-columns: 1.2fr 1fr 1.4fr; gap: 2rem; padding-top: 2rem; padding-bottom: 1.5rem; }
+.footer h4 { color: var(--lavanda); font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
+.footer p { color: var(--lavanda); font-size: .9rem; margin: 0 0 .4rem; }
+.footer nav { display: flex; flex-direction: column; gap: .35rem; }
+.footer a { color: var(--blanco); text-decoration: none; font-size: .9rem; }
+.footer a:hover { color: var(--rojo); }
+.footer-marca { font-size: 1.3rem; color: var(--blanco); }
+.footer-pie { text-align: center; padding: 1rem 1.25rem; border-top: 1px solid var(--borde); color: var(--lavanda); font-size: .8rem; }
+
+@media (max-width: 800px) {
+  .footer-interior { grid-template-columns: 1fr; gap: 1.2rem; }
+  .navbar-interior { justify-content: center; }
+  .franja-interior { justify-content: flex-start; }
+  .filtros { position: static; }
+}
+.producto-pie { flex-wrap: wrap; gap: .5rem; }

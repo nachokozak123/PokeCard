@@ -36,9 +36,9 @@ export default function Login() {
       <div className="auth-form-wrap">
         <form className="auth-form" onSubmit={enviar}>
           <h1>Ingresar</h1>
-          <label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
-          <label>Contraseña<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required /></label>
-          {error && <p className="error">{error}</p>}
+          <label>Email<input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
+          <label>Contraseña<input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required /></label>
+          {error && <p className="error" role="alert">{error}</p>}
           <button className="btn btn-rojo btn-grande btn-block">Ingresar</button>
           <p className="auth-alt">¿No tenés cuenta? <Link to="/registro">Registrate</Link></p>
         </form>

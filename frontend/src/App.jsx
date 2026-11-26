@@ -1,5 +1,6 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Link } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import RutaProtegida from './components/RutaProtegida';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -17,7 +18,9 @@ import AdminPedidos from './pages/admin/AdminPedidos';
 export default function App() {
   return (
     <>
+      <a href="#contenido" className="saltar">Saltar al contenido</a>
       <Navbar />
+      <div id="contenido" tabIndex={-1}>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
@@ -36,8 +39,16 @@ export default function App() {
           <Route path="pedidos" element={<AdminPedidos />} />
         </Route>
 
-        <Route path="*" element={<main className="contenedor"><h1>Página no encontrada</h1></main>} />
+        <Route path="*" element={
+          <main className="contenedor vacio">
+            <h1>Página no encontrada</h1>
+            <p>La carta que buscás no está acá. Probá desde el catálogo.</p>
+            <Link to="/catalogo" className="btn btn-rojo">Ir al catálogo</Link>
+          </main>
+        } />
       </Routes>
+      </div>
+      <Footer />
     </>
   );
 }

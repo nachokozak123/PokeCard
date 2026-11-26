@@ -19,24 +19,34 @@
 | RF-13 | El panel administrativo (dashboard) muestra: total de productos, clientes, pedidos y ventas; valor del inventario; productos con stock bajo; productos por categoría y últimos usuarios registrados. | Admin | Hecho |
 | RF-14 | El cliente puede agregar productos al carrito y finalizar una compra. | Cliente | Hecho (pago simulado) |
 | RF-15 | El cliente puede consultar sus pedidos; el admin puede ver todos los pedidos, su detalle y gestionar su estado (pagado → enviado / cancelado). Al cancelar, se devuelve el stock. | Cliente / Admin | Hecho |
+| RF-16 | El cliente carga sus datos de envío al comprar y quedan guardados en el pedido. | Cliente | Hecho |
+| RF-17 | El catálogo permite buscar por nombre y muestra el total de resultados; el Home muestra productos destacados. | Todos | Hecho |
+| RF-18 | Las tarjetas de producto muestran la disponibilidad ("Últimas N", "Sin stock") y permiten agregar al carrito directamente. | Todos | Hecho |
 
 ## Requerimientos no funcionales
 
 | Código | Categoría | Requerimiento |
 |---|---|---|
-| RNF-01 | Seguridad | Las contraseñas se almacenan encriptadas con hash **bcrypt** (10 rondas de sal). Nunca se guardan ni se devuelven en texto plano. |
+| RNF-01 | Seguridad | Las contraseñas se almacenan encriptadas con hash **bcrypt** (12 rondas de sal). Deben tener 8 a 72 caracteres con letras y números. Nunca se guardan ni se devuelven en texto plano. |
 | RNF-02 | Seguridad | La autenticación usa tokens **JWT** firmados, con vencimiento de 2 horas. |
 | RNF-03 | Seguridad | Toda ruta de escritura sobre productos, categorías y proveedores, y el dashboard, exigen token válido y rol admin (respuestas 401 / 403). |
 | RNF-04 | Seguridad | Las consultas SQL son parametrizadas para evitar inyección SQL; los valores de ordenamiento se validan contra una lista permitida. |
 | RNF-05 | Seguridad | El mensaje de error del login es el mismo si falla el email o la contraseña, para no revelar qué cuentas existen. |
 | RNF-06 | Seguridad | Los secretos (clave JWT, credenciales de la base) se guardan en variables de entorno (`.env`), fuera del código. |
-| RNF-07 | Integridad de datos | La base de datos valida claves foráneas, email único, precio y stock no negativos. |
+| RNF-07 | Integridad de datos | La base de datos (PostgreSQL en Supabase) valida claves foráneas, email único (sin distinguir mayúsculas), precio y stock no negativos. |
 | RNF-08 | Usabilidad | La interfaz es adaptable a celular (diseño responsive) y respeta la identidad visual de PokeCard (paleta definida y tipografía Sora). |
 | RNF-09 | Rendimiento | Las consultas del catálogo responden en menos de 1 segundo con hasta 1.000 productos, usando un pool de conexiones a MySQL. |
 | RNF-10 | Mantenibilidad | El backend está separado en rutas, middleware y acceso a datos; hay tests automáticos del backend (Jest + Supertest) y del frontend (Vitest). |
-| RNF-11 | Portabilidad | Funciona sobre Node.js 18 o superior y MySQL 8, en cualquier sistema operativo. |
+| RNF-11 | Portabilidad | Funciona sobre Node.js 18 o superior y PostgreSQL 15+ (Supabase), en cualquier sistema operativo. |
 | RNF-12 | Compatibilidad | Compatible con las versiones actuales de Chrome, Firefox, Edge y Safari. |
 | RNF-13 | Confiabilidad | La API responde con códigos HTTP coherentes (400, 401, 402, 403, 404, 409, 413, 429, 500) y mensajes de error claros, también ante un JSON mal formado. |
-| RNF-14 | Seguridad | El login se bloquea 15 minutos después de 5 intentos fallidos con el mismo email (protección contra fuerza bruta). |
+| RNF-14 | Seguridad | El login se bloquea 15 minutos después de 5 intentos fallidos con el mismo email desde la misma conexión, y además hay un límite de peticiones por IP (protección contra fuerza bruta). |
 | RNF-15 | Seguridad | Los datos de la tarjeta se validan en el frontend y en el backend (Luhn, vencimiento y CVC); el número completo nunca se guarda. |
-| RNF-16 | Seguridad | En producción la API acepta peticiones solo del dominio configurado en `CORS_ORIGIN`. |
+| RNF-16 | Seguridad | En producción la API acepta peticiones solo del dominio configurado en `CORS_ORIGIN` y no arranca si falta. |
+| RNF-17 | Seguridad | La API envía cabeceras de seguridad (helmet: HSTS, nosniff, CSP, anti-iframe) y limita el tamaño del cuerpo a 20 KB. |
+| RNF-18 | Seguridad | Todas las tablas de Supabase tienen **RLS** activado: la API pública (clave `anon`) solo puede leer categorías, reseñas y productos activos; usuarios y pedidos solo los toca el backend. |
+| RNF-19 | Seguridad | Los tokens JWT se firman y verifican con HS256 fijo; un token sin firma o con otro algoritmo se rechaza. |
+| RNF-20 | Seguridad | El login tarda lo mismo si el email no existe (hash falso) para no revelar qué cuentas hay, y las cuentas desactivadas no pueden ingresar. |
+| RNF-21 | Integridad | La compra es atómica: la función `crear_pedido()` bloquea los productos, valida stock, descuenta y registra el pedido en una sola transacción. |
+| RNF-22 | Seguridad | Las imágenes de producto solo admiten URLs http(s) y los ids de la URL se validan como números antes de consultar la base. |
+| RNF-23 | Usabilidad | Foco visible, enlace "Saltar al contenido", etiquetas de stock y respeto de `prefers-reduced-motion`. |

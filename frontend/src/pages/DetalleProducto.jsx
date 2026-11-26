@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api, precio } from '../api';
 import { useCarrito } from '../CarritoContext';
+import { EstadoStock } from '../components/TarjetaProducto';
 
 export default function DetalleProducto() {
   const { id } = useParams();
@@ -27,6 +28,7 @@ export default function DetalleProducto() {
         <div>
           {(p.rareza || p.coleccion) && <span className="chip">{[p.rareza, p.coleccion].filter(Boolean).join(' · ')}</span>}
           <h1>{p.nombre}</h1>
+          <EstadoStock stock={p.stock} />
           <p className="precio precio-grande">{precio(p.precio)}</p>
           <p>{p.descripcion}</p>
           <dl className="datos">
@@ -39,7 +41,7 @@ export default function DetalleProducto() {
             onClick={() => { agregar(p); setAgregado(true); }}>
             {p.stock < 1 ? 'Sin stock' : 'Agregar al carrito'}
           </button>
-          {agregado && <p className="exito">Agregado. <Link to="/carrito">Ver carrito</Link></p>}
+          {agregado && <p className="exito" role="status">Agregado. <Link to="/carrito">Ver carrito</Link></p>}
           <p className="aviso">Autenticidad verificada · Cartas únicas, compras seguras</p>
         </div>
       </div>

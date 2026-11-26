@@ -4,10 +4,14 @@ import { Card } from 'crd-ui/react';
 import 'crd-ui/styles.css';
 import { api, precio } from '../api';
 import { useCarrito } from '../CarritoContext';
-import { validarTarjeta } from '../validaciones';
+import { validarTarjeta, validarEnvio } from '../validaciones';
+import { useAuth } from '../AuthContext';
 
 export default function Checkout() {
   const { items, subtotal, vaciar } = useCarrito();
+  const { usuario } = useAuth();
+  const [envio, setEnvio] = useState({ nombre: usuario?.nombre || '', direccion: '', ciudad: '', provincia: '', cp: '', telefono: '' });
+  const [erroresEnvio, setErroresEnvio] = useState({});
   const [form, setForm] = useState({ number: '', name: '', expiry: '', cvc: '' });
   const [focused, setFocused] = useState(null);
   const [errores, setErrores] = useState({});
@@ -21,6 +25,7 @@ export default function Checkout() {
         <h1>¡Pago aprobado!</h1>
         <p className="exito">Comprobante {recibo.comprobante}</p>
         <p>Pagaste {precio(recibo.total)} con la tarjeta terminada en {recibo.tarjeta_last4}.</p>
+        <p>Te lo enviamos a <b>{envio.direccion}, {envio.ciudad}</b>. Podés seguir el estado en “Mis pedidos”.</p>
         <p className="aviso">Este pago es una simulación: no se realizó ningún cobro real.</p>
         <Link to="/pedidos" className="btn btn-rojo">Ver mis pedidos</Link>
       </main>
@@ -61,8 +66,10 @@ export default function Checkout() {
     e.preventDefault();
     setError('');
     const encontrados = validarTarjeta(form);
+    const encontradosEnvio = validarEnvio(envio);
     setErrores(encontrados);
-    if (Object.keys(encontrados).length) return;
+    setErroresEnvio(encontradosEnvio);
+    if (Object.keys(encontrados).length || Object.keys(encontradosEnvio).length) return;
 
     setEstado('pagando');
     try {
@@ -70,6 +77,7 @@ export default function Checkout() {
         method: 'POST',
         body: {
           items: items.map((i) => ({ producto_id: i.id, cantidad: i.cantidad })),
+          envio: Object.fromEntries(Object.entries(envio).map(([k, v]) => [k, v.trim()])),
           tarjeta: { numero: form.number, nombre: form.name, vencimiento: form.expiry, cvc: form.cvc },
         },
       });
@@ -81,6 +89,15 @@ export default function Checkout() {
       setEstado('idle');
     }
   }
+
+  const campoEnvio = (etiqueta, nombre, props = {}) => (
+    <label>
+      {etiqueta}
+      <input value={envio[nombre]} onChange={(e) => setEnvio({ ...envio, [nombre]: e.target.value })}
+        disabled={estado === 'pagando'} aria-invalid={Boolean(erroresEnvio[nombre])} {...props} />
+      {erroresEnvio[nombre] && <small className="error">{erroresEnvio[nombre]}</small>}
+    </label>
+  );
 
   const campo = (etiqueta, nombre, props = {}) => (
     <label>
@@ -95,6 +112,18 @@ export default function Checkout() {
       <h1>Pago</h1>
       <div className="carrito">
         <form className="checkout-form" onSubmit={pagar} noValidate>
+          <h2>1. Datos de envío</h2>
+          {campoEnvio('Nombre y apellido de quien recibe', 'nombre', { autoComplete: 'name', maxLength: 100 })}
+          {campoEnvio('Calle y número', 'direccion', { autoComplete: 'street-address', maxLength: 200 })}
+          <div className="grilla-2">
+            {campoEnvio('Ciudad', 'ciudad', { autoComplete: 'address-level2', maxLength: 100 })}
+            {campoEnvio('Provincia', 'provincia', { autoComplete: 'address-level1', maxLength: 100 })}
+          </div>
+          <div className="grilla-2">
+            {campoEnvio('Código postal', 'cp', { autoComplete: 'postal-code', maxLength: 10 })}
+            {campoEnvio('Teléfono', 'telefono', { autoComplete: 'tel', inputMode: 'tel', maxLength: 30 })}
+          </div>
+          <h2>2. Pago</h2>
           <Card
             number={form.number} name={form.name} expiry={form.expiry} cvc={form.cvc}
             focused={focused} variant="graphite" tilt
@@ -110,6 +139,7 @@ export default function Checkout() {
           <button className="btn btn-rojo btn-grande btn-block" disabled={estado === 'pagando'}>
             {estado === 'pagando' ? 'Procesando pago…' : `Pagar ${precio(subtotal)}`}
           </button>
+          <p className="aviso seguro">🔒 Tus datos de tarjeta viajan cifrados y no se guardan: solo conservamos los últimos 4 dígitos.</p>
           <p className="aviso">
             Pago simulado: usá <b>4111 1111 1111 1111</b> con cualquier fecha futura. Si la tarjeta
             termina en <b>0002</b>, el pago se rechaza.

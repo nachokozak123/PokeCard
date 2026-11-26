@@ -1,6 +1,6 @@
 // Tests de las validaciones del checkout y del registro
 import { describe, test, expect } from 'vitest';
-import { luhn, vencimientoOk, validarTarjeta, validarRegistro } from '../validaciones';
+import { luhn, vencimientoOk, validarTarjeta, validarRegistro, validarPassword, validarEnvio } from '../validaciones';
 
 const hoy = new Date(2026, 10, 6); // 6 de noviembre de 2026
 const tarjetaOk = { number: '4111 1111 1111 1111', name: 'ASH KETCHUM', expiry: '12/30', cvc: '123' };
@@ -36,12 +36,28 @@ describe('validarTarjeta', () => {
 
 describe('validarRegistro', () => {
   test('datos correctos', () => {
-    expect(validarRegistro({ nombre: 'Misty', email: 'misty@mail.com', password: 'starmie' })).toBeNull();
+    expect(validarRegistro({ nombre: 'Misty', email: 'misty@mail.com', password: 'starmie123' })).toBeNull();
   });
   test('email inválido', () => {
-    expect(validarRegistro({ nombre: 'Misty', email: 'misty@', password: 'starmie' })).toMatch(/email/);
+    expect(validarRegistro({ nombre: 'Misty', email: 'misty@', password: 'starmie123' })).toMatch(/email/);
   });
   test('contraseña corta', () => {
-    expect(validarRegistro({ nombre: 'Misty', email: 'misty@mail.com', password: '123' })).toMatch(/6/);
+    expect(validarRegistro({ nombre: 'Misty', email: 'misty@mail.com', password: '123' })).toMatch(/8/);
+  });
+});
+
+describe('validarPassword', () => {
+  test('acepta 8+ caracteres con letras y números', () => expect(validarPassword('pikachu123')).toBeNull());
+  test('rechaza sin números', () => expect(validarPassword('pikachupika')).toMatch(/letras y números/));
+  test('rechaza sin letras', () => expect(validarPassword('123456789')).toMatch(/letras y números/));
+  test('rechaza más de 72 caracteres', () => expect(validarPassword('a1' + 'x'.repeat(80))).toMatch(/72/));
+});
+
+describe('validarEnvio', () => {
+  const ok = { nombre: 'Ash Ketchum', direccion: 'Calle Falsa 123', ciudad: 'Pueblo Paleta', provincia: 'Kanto', cp: '1000', telefono: '11 5555-0000' };
+  test('acepta datos completos', () => expect(validarEnvio(ok)).toEqual({}));
+  test('marca cada campo vacío o inválido', () => {
+    const e = validarEnvio({ nombre: '', direccion: '', ciudad: '', provincia: '', cp: '<>', telefono: 'abc' });
+    expect(Object.keys(e).sort()).toEqual(['ciudad', 'cp', 'direccion', 'nombre', 'provincia', 'telefono']);
   });
 });

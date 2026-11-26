@@ -1,7 +1,7 @@
 // CRUD simple reutilizable para las tablas "categoria" y "proveedor"
 const express = require('express');
 const db = require('../db');
-const { verificarToken, soloAdmin } = require('../middleware/auth');
+const { verificarToken, soloAdmin, idValido } = require('../middleware/auth');
 
 // Nombre repetido (ej. dos categorías iguales) -> 409 en lugar de 500
 function errorGuardar(e, res) {
@@ -15,6 +15,17 @@ function crearRouter({ tabla, campos, lecturaPublica }) {
   const permisosLectura = lecturaPublica ? [] : [verificarToken, soloAdmin];
   const obligatorio = campos[0]; // el primer campo (nombre) es obligatorio
 
+  // Cada campo debe ser texto y no demasiado largo (evita tipos raros que rompen la consulta)
+  const errorCampos = (body) => {
+    if (typeof body[obligatorio] !== 'string' || !body[obligatorio].trim()) return `El campo ${obligatorio} es obligatorio`;
+    for (const c of campos) {
+      if (body[c] != null && (typeof body[c] !== 'string' || body[c].length > 150)) return `El campo ${c} no es válido`;
+    }
+    return null;
+  };
+  const valores = (body) => campos.map((c) => (typeof body[c] === 'string' && body[c].trim() ? body[c].trim() : null));
+  const publico = (body) => Object.fromEntries(campos.map((c) => [c, body[c]]));
+
   router.get('/', ...permisosLectura, async (req, res) => {
     try {
       const [rows] = await db.query(`SELECT * FROM ${tabla} ORDER BY nombre`);
@@ -26,33 +37,35 @@ function crearRouter({ tabla, campos, lecturaPublica }) {
   });
 
   router.post('/', verificarToken, soloAdmin, async (req, res) => {
-    if (!req.body[obligatorio]) return res.status(400).json({ error: `El campo ${obligatorio} es obligatorio` });
+    const err = errorCampos(req.body);
+    if (err) return res.status(400).json({ error: err });
     try {
       const [r] = await db.query(
         `INSERT INTO ${tabla} (${campos.join(', ')}) VALUES (${campos.map(() => '?').join(', ')})`,
-        campos.map((c) => req.body[c] || null)
+        valores(req.body)
       );
-      res.status(201).json({ id: r.insertId, ...req.body });
+      res.status(201).json({ id: r.insertId, ...publico(req.body) });
     } catch (e) {
       errorGuardar(e, res);
     }
   });
 
-  router.put('/:id', verificarToken, soloAdmin, async (req, res) => {
-    if (!req.body[obligatorio]) return res.status(400).json({ error: `El campo ${obligatorio} es obligatorio` });
+  router.put('/:id', verificarToken, soloAdmin, idValido, async (req, res) => {
+    const err = errorCampos(req.body);
+    if (err) return res.status(400).json({ error: err });
     try {
       const [r] = await db.query(
         `UPDATE ${tabla} SET ${campos.map((c) => `${c} = ?`).join(', ')} WHERE id = ?`,
-        [...campos.map((c) => req.body[c] || null), req.params.id]
+        [...valores(req.body), req.params.id]
       );
       if (r.affectedRows === 0) return res.status(404).json({ error: 'No encontrado' });
-      res.json({ id: Number(req.params.id), ...req.body });
+      res.json({ id: Number(req.params.id), ...publico(req.body) });
     } catch (e) {
       errorGuardar(e, res);
     }
   });
 
-  router.delete('/:id', verificarToken, soloAdmin, async (req, res) => {
+  router.delete('/:id', verificarToken, soloAdmin, idValido, async (req, res) => {
     try {
       const [r] = await db.query(`DELETE FROM ${tabla} WHERE id = ?`, [req.params.id]);
       if (r.affectedRows === 0) return res.status(404).json({ error: 'No encontrado' });

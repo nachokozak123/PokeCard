@@ -92,3 +92,61 @@ describe('Errores generales', () => {
   });
 });
 
+
+describe('Política de contraseñas y login seguro', () => {
+  const reg = (password) => request(app).post('/usuarios/registro').send({ nombre: 'Ash', email: 'ash@mail.com', password });
+
+  test.each([
+    ['corta', 'abc123'],
+    ['solo letras', 'pikachupikachu'],
+    ['solo números', '123456789'],
+  ])('rechaza una contraseña %s', async (_n, pass) => {
+    const res = await reg(pass);
+    expect(res.status).toBe(400);
+    expect(db.query).not.toHaveBeenCalled();
+  });
+
+  test('rechaza contraseñas de más de 72 caracteres (bcrypt ignora el resto)', async () => {
+    const res = await reg('a1' + 'x'.repeat(80));
+    expect(res.status).toBe(400);
+  });
+
+  test('un email repetido que se cuela por una carrera igual devuelve 409 (no 500)', async () => {
+    db.query.mockResolvedValueOnce([[]]).mockRejectedValueOnce(Object.assign(new Error('dup'), { code: 'ER_DUP_ENTRY' }));
+    const res = await reg('pikachu123');
+    expect(res.status).toBe(409);
+  });
+
+  test('el login compara el hash aunque el email no exista (mismo tiempo, mismo mensaje)', async () => {
+    db.query.mockResolvedValueOnce([[]]);
+    const spy = jest.spyOn(bcrypt, 'compare');
+    const res = await request(app).post('/usuarios/login').send({ email: 'nadie@mail.com', password: 'cualquiera1' });
+    expect(res.status).toBe(401);
+    expect(res.body.error).toBe('Credenciales inválidas');
+    expect(spy).toHaveBeenCalled();
+    spy.mockRestore();
+  });
+
+  test('una cuenta desactivada no puede iniciar sesión', async () => {
+    const hash = await bcrypt.hash('starmie456', 4);
+    db.query.mockResolvedValueOnce([[{ id: 3, nombre: 'Misty', email: 'm@mail.com', contrasena_hash: hash, rol: 'cliente', activo: false }]]);
+    const res = await request(app).post('/usuarios/login').send({ email: 'm@mail.com', password: 'starmie456' });
+    expect(res.status).toBe(401);
+    expect(res.body.token).toBeUndefined();
+  });
+
+  test('el login rechaza tipos que no son texto (inyección NoSQL/objetos)', async () => {
+    const res = await request(app).post('/usuarios/login').send({ email: { $ne: '' }, password: { $ne: '' } });
+    expect(res.status).toBe(400);
+    expect(db.query).not.toHaveBeenCalled();
+  });
+
+  test('el token usa HS256 y un token firmado con otro algoritmo o sin firma se rechaza', async () => {
+    const sinFirma = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url')
+      + '.' + Buffer.from(JSON.stringify({ id: 1, rol: 'admin' })).toString('base64url') + '.';
+    const res = await request(app).get('/admin/dashboard').set('Authorization', `Bearer ${sinFirma}`);
+    expect(res.status).toBe(401);
+    const hs512 = jwt.sign({ id: 1, rol: 'admin' }, process.env.JWT_SECRET, { algorithm: 'HS512' });
+    expect((await request(app).get('/admin/dashboard').set('Authorization', `Bearer ${hs512}`)).status).toBe(401);
+  });
+});

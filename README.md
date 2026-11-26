@@ -2,7 +2,7 @@
 
 Tienda online de cartas coleccionables Pokémon. *"Cartas únicas, compras seguras."*
 
-- **Backend:** Node.js + Express + MySQL (contraseñas con bcrypt, login con JWT)
+- **Backend:** Node.js + Express + PostgreSQL en **Supabase** (contraseñas con bcrypt, login con JWT)
 - **Frontend:** React + Vite
 
 ## Qué incluye esta entrega
@@ -17,29 +17,33 @@ Tienda online de cartas coleccionables Pokémon. *"Cartas únicas, compras segur
 | Diagrama de base de datos | `docs/Diagrama_BD_PokeCard.png` y `database/schema.sql` |
 | Requerimientos funcionales y no funcionales | `docs/Requerimientos.md` |
 | Documentación técnica e identidad institucional (secciones 1 a 10) | `docs/Documentacion_Tecnica.md` |
-| Tests de backend | `backend/tests/` (37 tests) |
-| Tests de frontend | `frontend/src/__tests__/` (12 tests) |
+| Tests de backend | `backend/tests/` (69 tests) |
+| Tests de frontend | `frontend/src/__tests__/` (18 tests) |
 | Gestión de pedidos del admin | `backend/src/routes/pedidos.js`, `frontend/src/pages/admin/AdminPedidos.jsx` |
 | Material de marketing (tríptico, QR, merchandising, plano del local) | `docs/marketing/` |
 | Mockups | `docs/mockups/` |
 
 ## Cómo ejecutarlo
 
-Necesitás Node.js 18+ y MySQL 8.
+Necesitás Node.js 18+ y una cuenta gratuita en [Supabase](https://supabase.com).
 
-### 1. Base de datos
-```bash
-mysql -u root -p < database/schema.sql
-```
+### 1. Base de datos (Supabase)
+1. Creá un proyecto en Supabase (guardá la contraseña de la base).
+2. Abrí **SQL Editor → New query**, pegá el contenido de [`database/supabase/schema.sql`](database/supabase/schema.sql) y apretá **Run**.
+   Crea las tablas, índices, reglas de seguridad (RLS), las funciones de compra/cancelación y el catálogo de ejemplo. Se puede volver a ejecutar sin romper nada.
+3. En **Project Settings → Database → Connection string** copiá la cadena *Transaction pooler* para `DATABASE_URL`.
+
+> `database/schema.sql` (MySQL) quedó como referencia de la primera etapa; la versión vigente es la de `database/supabase/`.
 
 ### 2. Backend
 ```bash
 cd backend
 npm install
-cp .env.example .env      # completá DB_PASSWORD y JWT_SECRET
-npm run seed              # carga categorías, productos y usuarios de ejemplo
+cp .env.example .env      # completá DATABASE_URL, JWT_SECRET y CORS_ORIGIN
+npm run seed              # crea el admin y muestra su contraseña UNA vez
 npm run dev               # http://localhost:3001
 ```
+`ADMIN_EMAIL` / `ADMIN_PASSWORD` permiten elegir las credenciales del admin; con `SEED_DEMO=1` también crea `cliente@pokecard.com`.
 
 ### 3. Frontend
 ```bash
@@ -49,25 +53,25 @@ npm run dev               # http://localhost:5173
 ```
 Si el backend corre en otra dirección, copiá `.env.example` a `.env` y cambiá `VITE_API_URL`.
 
-### Usuarios de prueba (creados por `npm run seed`)
-| Rol | Email | Contraseña |
-|---|---|---|
-| Admin | admin@pokecard.com | Admin123 |
-| Cliente | cliente@pokecard.com | Cliente123 |
+### Seguridad: qué hay que hacer antes de publicar
+- `NODE_ENV=production`, `JWT_SECRET` de 32+ caracteres al azar, `CORS_ORIGIN` con el dominio real del frontend y `TRUST_PROXY=1` si hay proxy.
+- Nunca subir `.env` a GitHub. Si alguna vez subiste una contraseña de la base, cambiala desde Supabase.
+- No usar la clave `service_role` de Supabase en el frontend. El frontend solo habla con la API de Express.
 
 ## Tests
 ```bash
-cd backend && npm test     # 37 tests (Jest + Supertest)
-cd frontend && npm test    # 12 tests (Vitest)
+cd backend && npm test     # 69 tests (Jest + Supertest)
+cd frontend && npm test    # 18 tests (Vitest)
 ```
-Los tests del backend usan una base de datos simulada (mock), por lo que **no necesitan MySQL**.
+Los tests del backend usan una base de datos simulada (mock), por lo que **no necesitan conexión a Supabase**.
 
 | Archivo | Qué prueban |
 |---|---|
 | `usuarios.test.js` | El registro guarda el **hash** y no el texto plano, fuerza el rol cliente, rechaza emails repetidos y contraseñas cortas; el login devuelve un JWT válido o 401 y bloquea tras 5 intentos fallidos (429); JSON mal formado (400). |
 | `permisos.test.js` | Sin token → 401; token falso → 401; cliente → 403; admin → 201. |
 | `productos.test.js` | Listado, 404, protección contra inyección en el orden, validaciones del CRUD, respuesta del dashboard y categoría repetida (409). |
-| `pedidos.test.js` | Pago: Luhn, vencimiento, stock, tarjeta rechazada y pago aprobado. Gestión: permisos, detalle, cambios de estado y devolución de stock al cancelar. |
+| `pedidos.test.js` | Pago: datos de envío, Luhn, vencimiento, stock, tarjeta rechazada y pago aprobado (usa el usuario del token, guarda solo los últimos 4 dígitos). Gestión: permisos, detalle, cambios de estado y devolución de stock al cancelar. |
+| `seguridad.test.js` | Cabeceras (helmet), límite de tamaño, adaptador SQL con parámetros, validación de tipos e imágenes, no reflejar campos extra. |
 | `validaciones.test.js` (frontend) | Luhn, vencimiento, errores de la tarjeta y del registro. |
 
 ## Endpoints
@@ -77,7 +81,7 @@ Los tests del backend usan una base de datos simulada (mock), por lo que **no ne
 | POST | `/usuarios/registro` | Público |
 | POST | `/usuarios/login` | Público |
 | GET | `/usuarios` | Admin |
-| GET | `/productos` (filtros: `categoria`, `coleccion`, `rareza`, `orden`, `q`) | Público |
+| GET | `/productos` (filtros: `categoria`, `coleccion`, `rareza`, `orden`, `q`, `destacados=1`, paginación `limite` y `pagina`; total en la cabecera `X-Total-Count`) | Público |
 | GET | `/productos/filtros` | Público |
 | GET | `/productos/:id` | Público |
 | POST / PUT / DELETE | `/productos`, `/productos/:id` | Admin |
@@ -85,7 +89,7 @@ Los tests del backend usan una base de datos simulada (mock), por lo que **no ne
 | POST / PUT / DELETE | `/categorias` | Admin |
 | GET / POST / PUT / DELETE | `/proveedores` | Admin |
 | GET | `/admin/dashboard` | Admin |
-| POST | `/pedidos` (compra con **pago simulado**) | Usuario con sesión |
+| POST | `/pedidos` (compra con **pago simulado**; exige datos de envío) | Usuario con sesión |
 | GET | `/pedidos/mios` | Usuario con sesión |
 | GET | `/pedidos/:id` (detalle con productos) | Dueño del pedido o admin |
 | GET | `/pedidos` (filtro: `estado`) | Admin |
@@ -94,7 +98,7 @@ Los tests del backend usan una base de datos simulada (mock), por lo que **no ne
 ## Módulo de pago (simulación)
 - **Carrito:** `frontend/src/CarritoContext.jsx` y `pages/Carrito.jsx` (se guarda en `localStorage`).
 - **Checkout:** `pages/Checkout.jsx` usa la tarjeta animada de [`crd-ui`](https://crd-ui.juanda.co/) y valida número (Luhn), titular, vencimiento no vencido y CVC (`src/validaciones.js`).
-- **Pago simulado:** `backend/src/routes/pedidos.js`. Revalida todo (también Luhn y vencimiento), toma precios y stock de la base (nunca del cliente), crea el pedido en una transacción y descuenta el stock. **El número de tarjeta no se guarda.**
+- **Pago simulado:** `backend/src/routes/pedidos.js`. Revalida todo (también Luhn y vencimiento) y llama a la función `crear_pedido()` de la base, que en una sola transacción bloquea los productos, toma precios y stock de la base (nunca del cliente) y descuenta el stock. **El número de tarjeta no se guarda.**
 - **Tarjetas de prueba:** `4111 1111 1111 1111` (aprobada) · cualquier tarjeta válida terminada en `0002` (rechazada). Vencimiento futuro y CVC de 3 dígitos.
 - **Mis pedidos:** `pages/MisPedidos.jsx`.
 - **Gestión de pedidos (admin):** `pages/admin/AdminPedidos.jsx`. Lista, filtra por estado, muestra el detalle y permite marcar como enviado o cancelar.

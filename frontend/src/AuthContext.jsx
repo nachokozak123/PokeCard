@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { api } from './api';
 
 const AuthContext = createContext(null);
@@ -27,6 +27,13 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('usuario');
     setUsuario(null);
   }
+
+  // Si la API responde 401 con una sesión abierta (token vencido), se cierra la sesión
+  useEffect(() => {
+    const vencida = () => { logout(); window.alert('Tu sesión venció. Ingresá de nuevo para continuar.'); };
+    window.addEventListener('sesion-vencida', vencida);
+    return () => window.removeEventListener('sesion-vencida', vencida);
+  }, []);
 
   return (
     <AuthContext.Provider value={{ usuario, login, registro, logout, esAdmin: usuario?.rol === 'admin' }}>

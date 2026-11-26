@@ -37,6 +37,25 @@ export const validarTarjeta = (f) => {
 export const validarRegistro = ({ nombre, email, password }) => {
   if (!nombre.trim()) return 'El nombre es obligatorio.';
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'El email no es válido.';
-  if (password.length < 6) return 'La contraseña debe tener al menos 6 caracteres.';
+  return validarPassword(password);
+};
+
+// Mismas reglas que el backend: 8 a 72 caracteres, con letras y números
+export const validarPassword = (p) => {
+  if (p.length < 8) return 'La contraseña debe tener al menos 8 caracteres.';
+  if (p.length > 72) return 'La contraseña no puede superar los 72 caracteres.';
+  if (!/[A-Za-z]/.test(p) || !/\d/.test(p)) return 'La contraseña debe incluir letras y números.';
   return null;
+};
+
+// Datos de envío del checkout. Devuelve { campo: mensaje } (vacío si está todo bien)
+export const validarEnvio = (f) => {
+  const e = {};
+  if (f.nombre.trim().length < 3) e.nombre = 'Ingresá nombre y apellido de quien recibe.';
+  if (f.direccion.trim().length < 5) e.direccion = 'Ingresá calle y número.';
+  if (f.ciudad.trim().length < 2) e.ciudad = 'Ingresá la ciudad.';
+  if (f.provincia.trim().length < 2) e.provincia = 'Ingresá la provincia.';
+  if (!/^[A-Za-z0-9 -]{4,10}$/.test(f.cp.trim())) e.cp = 'Código postal no válido.';
+  if (!/^[\d+() -]{6,30}$/.test(f.telefono.trim())) e.telefono = 'Teléfono no válido (solo números, +, - y paréntesis).';
+  return e;
 };

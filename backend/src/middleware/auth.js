@@ -7,7 +7,8 @@ function verificarToken(req, res, next) {
     return res.status(401).json({ error: 'Token requerido' });
   }
   try {
-    req.usuario = jwt.verify(token, process.env.JWT_SECRET); // { id, nombre, rol }
+    // Se fija el algoritmo: evita ataques que cambian el "alg" del token
+    req.usuario = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] }); // { id, nombre, rol }
     next();
   } catch (e) {
     return res.status(401).json({ error: 'Token inválido o vencido' });
@@ -22,4 +23,25 @@ function soloAdmin(req, res, next) {
   next();
 }
 
-module.exports = { verificarToken, soloAdmin };
+// Los ids de la URL deben ser enteros positivos (evita errores 500 y consultas raras)
+function idValido(req, res, next) {
+  if (!/^\d{1,15}$/.test(req.params.id) || Number(req.params.id) < 1) {
+    return res.status(404).json({ error: 'No encontrado' });
+  }
+  next();
+}
+
+// Limitadores de ritmo para rutas sensibles (se desactivan en los tests)
+const rateLimit = require('express-rate-limit');
+function limitar({ minutos, max, mensaje }) {
+  if (process.env.NODE_ENV === 'test') return (req, res, next) => next();
+  return rateLimit({
+    windowMs: minutos * 60 * 1000,
+    limit: max,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: { error: mensaje },
+  });
+}
+
+module.exports = { verificarToken, soloAdmin, idValido, limitar };
