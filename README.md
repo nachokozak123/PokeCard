@@ -8,8 +8,7 @@ Tienda online de cartas coleccionables Pokémon. *"Cartas únicas, compras segur
 
 
 
-## archivo env 
-crear en backend archivo .env y poner lo siguiente
+## archivo env (crear en backend archivo .env)
 @"
 DATABASE_URL=postgresql://postgres.irdwgktluoedsvkbetyj:43890074culse@aws-1-us-west-2.pooler.supabase.com:5432/postgres
 JWT_SECRET=a8bdf96247aa3172a644227bb67d3a5d3c96d2f9b25866611de46bebe049b5768406c5ee3bd764691365b0463150dd8b
