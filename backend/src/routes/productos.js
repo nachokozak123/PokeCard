@@ -38,7 +38,7 @@ function leerProducto(b) {
   if (!Number.isInteger(categoriaId) || categoriaId < 1) throw new ErrorHttp(400, 'La categoría es obligatoria');
   const proveedorId = b.proveedor_id ? Number(b.proveedor_id) : null;
   const imagen = opcional(b.imagen, 500);
-  if (imagen && !/^https:\/\/\S+$/.test(imagen)) throw new ErrorHttp(400, 'La imagen debe ser una URL que empiece con https://');
+  if (imagen && !/^(https:\/\/\S+|\/imagenes\/[A-Za-z0-9_-]+(\/[A-Za-z0-9_-]+)*\.(png|jpe?g|webp|gif|avif|svg))$/.test(imagen)) throw new ErrorHttp(400, 'La imagen debe ser un link https:// o un archivo de la carpeta /imagenes/ (ej: /imagenes/productos/charizard.png)');
 
   return [
     nombre, opcional(b.descripcion, 2000), Math.round(precio * 100) / 100, stock,

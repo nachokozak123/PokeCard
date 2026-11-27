@@ -12,6 +12,7 @@ function crearRouter({ tabla, campos, lecturaPublica, enUso, orden }) {
     const valores = campos.map(([campo, max]) => {
       const v = typeof body[campo] === 'string' ? body[campo].trim() : '';
       if (v.length > max) throw new ErrorHttp(400, `El campo ${campo} admite hasta ${max} caracteres`);
+      if (campo === 'imagen' && v && !/^(https:\/\/\S+|\/imagenes\/[A-Za-z0-9_-]+(\/[A-Za-z0-9_-]+)*\.(png|jpe?g|webp|gif|avif|svg))$/.test(v)) throw new ErrorHttp(400, 'La imagen debe ser un link https:// o un archivo de la carpeta /imagenes/ (ej: /imagenes/productos/charizard.png)');
       return v || null;
     });
     if (!valores[0]) throw new ErrorHttp(400, `El campo ${campos[0][0]} es obligatorio`);
@@ -59,7 +60,7 @@ function crearRouter({ tabla, campos, lecturaPublica, enUso, orden }) {
 
 module.exports = {
   categorias: crearRouter({
-    tabla: 'categoria', campos: [['nombre', 80]], lecturaPublica: true, orden: 'id',
+    tabla: 'categoria', campos: [['nombre', 80], ['imagen', 500]], lecturaPublica: true, orden: 'id',
     enUso: 'No se puede eliminar: la categoría tiene productos',
   }),
   proveedores: crearRouter({

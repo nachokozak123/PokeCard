@@ -83,7 +83,7 @@ export default function AdminProductos() {
             </label>
             <label>Colección<input value={form.coleccion} onChange={cambiar('coleccion')} maxLength={80} /></label>
             <label>Rareza<input value={form.rareza} onChange={cambiar('rareza')} maxLength={50} /></label>
-            <label>URL de la imagen (https)<input type="url" value={form.imagen} onChange={cambiar('imagen')} placeholder="https://…" /></label>
+            <label>Imagen (link https:// o /imagenes/productos/archivo.png)<input value={form.imagen} onChange={cambiar('imagen')} maxLength={500} placeholder="/imagenes/productos/charizard-holo.png" /></label>
           </div>
           <label>Descripción<textarea rows="3" value={form.descripcion} onChange={cambiar('descripcion')} maxLength={2000} /></label>
           <label className="check"><input type="checkbox" checked={form.activo} onChange={cambiar('activo')} /> Visible en la tienda</label>

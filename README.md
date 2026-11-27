@@ -30,7 +30,7 @@ PokeCard/
 
 ### 1. Crear el proyecto
 1. Entrá a [supabase.com](https://supabase.com), iniciá sesión y tocá **New project**.
-2. Poné un nombre (ej. `pokecard`), una **contraseña de base de datos** (guardala, la vas a necesitar, pokecard12345678910) y la región **South America (São Paulo)**.
+2. Poné un nombre (ej. `pokecard`), una **contraseña de base de datos** (guardala, la vas a necesitar) y la región **South America (São Paulo)**.
 3. Esperá a que termine de crearse (1 o 2 minutos).
 
 ### 2. Crear las tablas

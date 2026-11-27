@@ -5,7 +5,7 @@ import { api } from '../../api';
 export default function AdminCatalogos() {
   return (
     <div className="grilla-2">
-      <Tabla titulo="Categorías" ruta="/categorias" campos={[['nombre', 'Nombre', 80]]} />
+      <Tabla titulo="Categorías" ruta="/categorias" campos={[['nombre', 'Nombre', 80], ['imagen', 'Imagen (/imagenes/categorias/archivo.png)', 500]]} />
       <Tabla titulo="Proveedores" ruta="/proveedores" campos={[['nombre', 'Nombre', 100], ['contacto', 'Contacto', 150]]} />
     </div>
   );
